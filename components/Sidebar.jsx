@@ -39,17 +39,65 @@ import { MdOutlinePayments } from 'react-icons/md';
 
 const menuItems = [
     { label: "Dashboard", icon: <FaHome />, href: "/" },
+  
     {
-        label: "Exams / Result", icon: <FaBookReader />, href: "/exams",
-        subItems: [
-            { label: "Exam Timetable", href: "/exams/timetable", icon: <FaCalendarAlt /> },
-            { label: "Take Online Exams", href: "/exams/online", icon: <FaLaptopCode /> },
-            { label: "Submit Exam Scripts", href: "/exams/submit", icon: <FaPaperPlane /> },
-            { label: "View Results", href: "/exams/results", icon: <FaChartBar /> },
-            { label: "GPA / CGPA Tracker", href: "/exams/gpa-tracker", icon: <FaGraduationCap /> },
-            { label: "Download Transcripts", href: "/exams/transcripts", icon: <FaFileDownload /> },
-        ]
-    },
+      label: "My Profile", icon: <FaUser />, href: "/profile", badge: "New",
+      subItems: [
+          { label: "View & Edit Personal Info", href: "/profile/edit", icon: <FaUser /> },
+          { label: "Upload Passport Photo", href: "/profile/photo", icon: <FaUpload /> },
+          { label: "Update Password", href: "/profile/password", icon: <FaKey /> },
+          { label: "Download Student ID Card", href: "/profile/id-card", icon: <FaIdCard /> },
+      ]
+  },
+  {
+    label: "Courses", icon: <FaGraduationCap />, href: "/courses",
+    subItems: [
+        { label: "Registered Courses", href: "/courses/registered", icon: <FaBookOpen /> },
+        { label: "Register/Drop Courses", href: "/courses/register", icon: <FaPlusCircle /> },
+        { label: "Course Materials", href: "/courses/materials", icon: <FaCloudDownloadAlt /> },
+        { label: "Assignment Uploads", href: "/courses/assignments", icon: <FaUpload /> },
+        { label: "Class Schedule / Timetable", href: "/courses/timetable", icon: <FaRegClock /> },
+    ]
+},
+{
+  label: "Exams / Result", icon: <FaBookReader />, href: "/exams",
+  subItems: [
+      { label: "Exam Timetable", href: "/exams/timetable", icon: <FaCalendarAlt /> },
+      { label: "Take Online Exams", href: "/exams/online", icon: <FaLaptopCode /> },
+      { label: "Submit Exam Scripts", href: "/exams/submit", icon: <FaPaperPlane /> },
+      { label: "View Results", href: "/exams/results", icon: <FaChartBar /> },
+      { label: "GPA / CGPA Tracker", href: "/exams/gpa-tracker", icon: <FaGraduationCap /> },
+      { label: "Download Transcripts", href: "/exams/transcripts", icon: <FaFileDownload /> },
+  ]
+},
+{
+  label: "Payments", icon: <MdOutlinePayments />, href: "/payments",
+  subItems: [
+      { label: "Fee Breakdown", href: "/payment/fee-breakdown", icon: <FaListAlt /> },
+      { label: "Pay Online", href: "/payment/pay", icon: <FaCreditCard /> },
+      { label: "View Payment History", href: "/payment/history", icon: <FaHistory /> },
+      { label: "Download Payment Receipts", href: "/payment/receipts", icon: <FaDownload /> },
+      { label: "Print Invoice", href: "/payment/invoice", icon: <FaPrint /> },
+  ]
+},
+{
+  label: "Academic Records", icon: <FaBook />, href: "/academic-records",
+  subItems: [
+      { label: "Course Registration History", href: "/academic-records/registration-history", icon: <FaBook /> },
+      { label: "Academic Standing", href: "/academic-records/standing", icon: <FaBalanceScale /> },
+      { label: "Download Admission Letter", href: "/academic-records/admission-letter", icon: <FaFileDownload /> },
+      { label: "Graduation Eligibility", href: "/academic-records/graduation-eligibility", icon: <FaCheckCircle /> },
+  ]
+},
+{
+  label: "Resources", icon: <FaBook />, href: "/resources",
+  subItems: [
+      { label: "eLibrary", href: "/resources/elibrary", icon: <FaBook /> },
+      { label: "Lecture Notes", href: "/resources/notes", icon: <FaFileAlt /> },
+      { label: "Videos & Tutorials", href: "/resources/videos", icon: <FaVideo /> },
+      { label: "Study Groups / Forums", href: "/resources/groups", icon: <FaUsers /> },
+  ]
+},
     {
         label: "Registration Forms", icon: <FaWpforms />, href: "/registration-forms",
         subItems: [
@@ -58,53 +106,11 @@ const menuItems = [
             { label: "Mentorship", href: "/forms/mentorship", icon: <FaChalkboardTeacher /> },
         ]
     },
-    {
-        label: "Courses", icon: <FaGraduationCap />, href: "/courses",
-        subItems: [
-            { label: "Registered Courses", href: "/courses/registered", icon: <FaBookOpen /> },
-            { label: "Register/Drop Courses", href: "/courses/register", icon: <FaPlusCircle /> },
-            { label: "Course Materials", href: "/courses/materials", icon: <FaCloudDownloadAlt /> },
-            { label: "Assignment Uploads", href: "/courses/assignments", icon: <FaUpload /> },
-            { label: "Class Schedule / Timetable", href: "/courses/timetable", icon: <FaRegClock /> },
-        ]
-    },
-    {
-        label: "Payments", icon: <MdOutlinePayments />, href: "/payments",
-        subItems: [
-            { label: "Fee Breakdown", href: "/payment/fee-breakdown", icon: <FaListAlt /> },
-            { label: "Pay Online", href: "/payment/pay", icon: <FaCreditCard /> },
-            { label: "View Payment History", href: "/payment/history", icon: <FaHistory /> },
-            { label: "Download Payment Receipts", href: "/payment/receipts", icon: <FaDownload /> },
-            { label: "Print Invoice", href: "/payment/invoice", icon: <FaPrint /> },
-        ]
-    },
-    {
-        label: "Resources", icon: <FaBook />, href: "/resources",
-        subItems: [
-            { label: "eLibrary", href: "/resources/elibrary", icon: <FaBook /> },
-            { label: "Lecture Notes", href: "/resources/notes", icon: <FaFileAlt /> },
-            { label: "Videos & Tutorials", href: "/resources/videos", icon: <FaVideo /> },
-            { label: "Study Groups / Forums", href: "/resources/groups", icon: <FaUsers /> },
-        ]
-    },
-    {
-        label: "Academic Records", icon: <FaBook />, href: "/academic-records",
-        subItems: [
-            { label: "Course Registration History", href: "/academic-records/registration-history", icon: <FaBook /> },
-            { label: "Academic Standing", href: "/academic-records/standing", icon: <FaBalanceScale /> },
-            { label: "Download Admission Letter", href: "/academic-records/admission-letter", icon: <FaFileDownload /> },
-            { label: "Graduation Eligibility", href: "/academic-records/graduation-eligibility", icon: <FaCheckCircle /> },
-        ]
-    },
-    {
-        label: "My Profile", icon: <FaUser />, href: "/profile", badge: "New",
-        subItems: [
-            { label: "View & Edit Personal Info", href: "/profile/edit", icon: <FaUser /> },
-            { label: "Upload Passport Photo", href: "/profile/photo", icon: <FaUpload /> },
-            { label: "Update Password", href: "/profile/password", icon: <FaKey /> },
-            { label: "Download Student ID Card", href: "/profile/id-card", icon: <FaIdCard /> },
-        ]
-    },
+  
+  
+  
+  
+  
 ];
   
   const miscItems = [

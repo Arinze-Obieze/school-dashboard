@@ -1,52 +1,88 @@
-'use client'
-import React from 'react'
-import { FaBook, FaBookMedical, FaBookReader, FaGraduationCap, FaShoppingCart, FaUsers, FaWpforms } from "react-icons/fa"
-import { LuMessagesSquare } from "react-icons/lu"
-import CandidatesDashboardReport from './CandidatesDR'
-import Card from './Card'
-import { MdOutlinePayments } from 'react-icons/md'
+'use client';
+import React from 'react';
+import { FaBookOpen, FaDollarSign, FaChartLine } from 'react-icons/fa';
+import { MdEventNote, MdNotificationsActive } from 'react-icons/md';
+import Link from 'next/link';
+import Card from './Card';
 
+const Dashboard = () => {
+  // Sample data
+  const stats = [
+    { title: 'Courses Enrolled', value: 8, icon: <FaBookOpen className="text-blue-500 text-xl" />, bg: '#23272f', href: '/courses' },
+    { title: 'GPA', value: 3.75, icon: <FaChartLine className="text-green-500 text-xl" />, bg: '#23272f', href: '/exams/gpa-tracker' },
+    { title: 'Outstanding Fees', value: '₦12,500', icon: <FaDollarSign className="text-red-500 text-xl" />, bg: '#23272f', href: '/payments' },
+  ];
 
-const cards = [
-  { title: "Exams / Result", icon: <FaBookReader className="text-3xl" />, bg: "#00a3ba", href: "/exams" },
-  { title: "payments", icon: <MdOutlinePayments className="text-3xl" />, bg: "#dc143c", href: "/payments" },
-  { title: "College Payments", icon: <FaShoppingCart className="text-3xl" />, bg: "#00b050", href: "/college-payments" },
-{ title: "Courses", icon: <FaGraduationCap className="text-3xl" />, bg: "#a6a6a6", href: "/courses" },
-{ title: "Submit Proposal", icon: <FaBook className="text-3xl" />, bg: "#a6a6a6", href: "/submit-proposal" },
-  { title: "Update form", icon: <FaWpforms className="text-3xl" />, bg: "#3c4fff", href: "/update-form" },
-  { title: "User Settings", icon: <FaUsers className="text-3xl" />, bg: "#000000", href: "/user-settings" },
-  { title: "Support", icon: <LuMessagesSquare className="text-3xl" />, bg: "#ffcc00", href: "/support" },
-]
+  const upcomingExams = [
+    { title: 'MTH101 - Calculus I', date: '2025-07-05', time: '9:00 AM' },
+    { title: 'PHY102 - Mechanics', date: '2025-07-07', time: '2:00 PM' },
+  ];
 
-function Dashboard() {
+  const notifications = [
+    { id: 1, message: 'School portal will be under maintenance this weekend.' },
+    { id: 2, message: 'New course materials have been uploaded for CSC201.' },
+    { id: 3, message: 'Deadline to register for 2nd semester ends July 3rd.' },
+  ];
+
   return (
-    <div>
-      <div className='flex justify-between items-center mt-8 px-4'>
-        <h1 className='text-2xl text-white'>Dashboard</h1>
-        <div className='flex space-x-2'>
-          <h3 className='text-blue-700'>Home</h3>
-          <div className='text-white'> / </div>
-          <nav className='text-gray-400'>Dashboard</nav>
-        </div>
+    <div className="p-6 space-y-6 bg-[#3e444d]">
+      {/* Welcome Message */}
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-100">Welcome back, CHRISTOPHER 👋</h1>
+        <p className="text-gray-400 mt-1">Here’s what’s happening with your academic profile.</p>
       </div>
 
-      <div className="grid grid-cols-1 text-white sm:grid-cols-2 md:grid-cols-4 gap-4 p-4">
-        {cards.map((card, index) => (
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {stats.map((stat, index) => (
           <Card
             key={index}
-            title={card.title}
-            icon={card.icon}
-            bg={card.bg}
-            href={card.href}
+            title={<><span className="text-lg font-semibold text-white">{stat.value}</span> <span className="block text-gray-400 text-sm font-normal">{typeof stat.title === 'string' ? stat.title : ''}</span></>}
+            icon={stat.icon}
+            bg={stat.bg}
+            href={stat.href}
           />
         ))}
       </div>
 
-      <div className='p-4'>
-        <CandidatesDashboardReport />
+      {/* Upcoming Exams */}
+      <div className="bg-[#23272f] shadow rounded-lg p-5 border border-gray-700">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-100">
+            <MdEventNote className="text-blue-400" />
+            Upcoming Exams / Deadlines
+          </h2>
+          <Link href="/exams" className="text-sm text-blue-400 hover:underline">View All</Link>
+        </div>
+        <ul className="space-y-2">
+          {upcomingExams.map((exam, index) => (
+            <li key={index} className="border border-gray-700 rounded p-3 hover:bg-[#343940] transition">
+              <p className="font-medium text-gray-100">{exam.title}</p>
+              <p className="text-sm text-gray-400">{exam.date} at {exam.time}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Notifications */}
+      <div className="bg-[#23272f] shadow rounded-lg p-5 border border-gray-700">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-100">
+            <MdNotificationsActive className="text-orange-400" />
+            Notifications & Announcements
+          </h2>
+          <Link href="/notifications" className="text-sm text-orange-400 hover:underline">Read More</Link>
+        </div>
+        <ul className="space-y-2">
+          {notifications.slice(0, 3).map((note) => (
+            <li key={note.id} className="text-gray-200 text-sm border-l-4 border-orange-400 pl-3">
+              • {note.message}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;
