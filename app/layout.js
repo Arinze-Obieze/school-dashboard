@@ -12,7 +12,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="bg-[#454c56] flex flex-col lg:flex-row">
         {/* Sidebar: Hidden by default on small screens, fixed on large screens */}
-        <Sidebar isOpen={toggleSidebar} />
+        <Sidebar isOpen={toggleSidebar} setIsOpen={setToggleSidebar}  />
         {/* Main content: Full width on small screens, offset by sidebar width on large screens */}
         <div className="flex-1 lg:ml-64">
           <Header toggleSidebar={toggleSidebar} setToggleSidebar={setToggleSidebar} />

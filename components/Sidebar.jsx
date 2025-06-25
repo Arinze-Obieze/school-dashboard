@@ -7,37 +7,48 @@ import {
   FaCog, FaComments, FaSignOutAlt
 } from 'react-icons/fa';
 
+import { FaTimes } from 'react-icons/fa'; // import close icon
+
 const menuItems = [
-  { label: "Dashboard", icon: <FaHome />, href: "/" },
-  { label: "Exams / Result", icon: <FaBook />, href: "/exams" },
-  { label: "Training Forms", icon: <FaWpforms />, href: "/training-forms" },
-  { label: "Courses", icon: <FaGraduationCap />, href: "/courses" },
-  { label: "Fellowship Forms", icon: <FaGraduationCap />, href: "/fellowship-forms" },
-  { label: "College Payments", icon: <FaShoppingCart />, href: "/college-payments" },
-//   { label: "Approved Dissertations", icon: <FaBookMedical />, href: "/approved-dissertations" },
-  { label: "Academic Records", icon: <FaWpforms />, href: "/academic-records" },
-  { label: "My Profile", icon: <FaUser />, href: "/profile", badge: "New" },
-  { label: "Update User", icon: <FaWpforms />, href: "/update-user" },
-];
+    { label: "Dashboard", icon: <FaHome />, href: "/" },
+    { label: "Exams / Result", icon: <FaBook />, href: "/exams" },
+    { label: "Training Forms", icon: <FaWpforms />, href: "/training-forms" },
+    { label: "Courses", icon: <FaGraduationCap />, href: "/courses" },
+    { label: "Fellowship Forms", icon: <FaGraduationCap />, href: "/fellowship-forms" },
+    { label: "College Payments", icon: <FaShoppingCart />, href: "/college-payments" },
+  //   { label: "Approved Dissertations", icon: <FaBookMedical />, href: "/approved-dissertations" },
+    { label: "Academic Records", icon: <FaWpforms />, href: "/academic-records" },
+    { label: "My Profile", icon: <FaUser />, href: "/profile", badge: "New" },
+    { label: "Update User", icon: <FaWpforms />, href: "/update-user" },
+  ];
+  
+  const miscItems = [
+    { label: "User Settings", icon: <FaCog />, href: "/settings" },
+    { label: "Support", icon: <FaComments />, href: "/support" },
+    { label: "Logout", icon: <FaSignOutAlt />, href: "/logout" },
+  ];
 
-const miscItems = [
-  { label: "User Settings", icon: <FaCog />, href: "/settings" },
-  { label: "Support", icon: <FaComments />, href: "/support" },
-  { label: "Logout", icon: <FaSignOutAlt />, href: "/logout" },
-];
+function Sidebar({ isOpen, setIsOpen }) {
+  const handleClose = () => setIsOpen(false);
 
-function Sidebar({ isOpen }) {
   return (
     <div
       className={`bg-[#343940] z-50 text-white w-64 min-h-screen flex flex-col fixed top-0 left-0 h-full transition-transform duration-200 ease-in-out transform lg:translate-x-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
+   
+
       {/* Header */}
       <div>
-        <div className="text-center mt-4 mb-2">
+        <div className="text-center mt-4 mb-2 px-4 pt-2 flex place-items-center justify-between">
           <h2 className="font-extralight text-lg">User Dashboard</h2>
+             {/* Close button for small/medium screens */}
+      <div className="lg:hidden flex  ">
+        <FaTimes className="text-xl cursor-pointer" onClick={handleClose} />
+      </div>
         </div>
+
         <div className="flex border-t items-center gap-3 px-4 py-3 border-b border-gray-500">
           <img src="/c.jpg" alt="User" className="w-10 h-10 rounded-full" />
           <div>
