@@ -5,6 +5,7 @@ import {
   FaHome, FaBook, FaWpforms, FaGraduationCap,  FaUser,
   FaCog, FaComments, FaSignOutAlt
 } from 'react-icons/fa';
+import { GrResources } from "react-icons/gr";
 
 import { FaTimes } from 'react-icons/fa'; // import close icon
 import { MdOutlinePayments } from 'react-icons/md';
@@ -14,12 +15,12 @@ const menuItems = [
     { label: "Exams / Result", icon: <FaBook />, href: "/exams" },
     { label: "Registration Forms", icon: <FaWpforms />, href: "/registration-forms" },
     { label: "Courses", icon: <FaGraduationCap />, href: "/courses" },
-    { label: "Fellowship Forms", icon: <FaGraduationCap />, href: "/fellowship-forms" },
     { label: "Payments", icon: <MdOutlinePayments />, href: "/payments" },
+    { label: "Resources", icon: <GrResources />, href: "/resources" },
+
   //   { label: "Approved Dissertations", icon: <FaBookMedical />, href: "/approved-dissertations" },
     { label: "Academic Records", icon: <FaWpforms />, href: "/academic-records" },
     { label: "My Profile", icon: <FaUser />, href: "/profile", badge: "New" },
-    { label: "Update User", icon: <FaWpforms />, href: "/update-user" },
   ];
   
   const miscItems = [
