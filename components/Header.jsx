@@ -1,16 +1,20 @@
-import React from 'react'
+'use client'
 import { IoIosMenu, IoIosNotificationsOutline, } from "react-icons/io";
 import { IoSearch } from "react-icons/io5";
 import { MdDashboard, MdOutlineFullscreenExit } from "react-icons/md";
 
-function Header() {
+function Header({ toggleSidebar, setToggleSidebar }) {
+  const handleToggleSidebar = () => {
+    setToggleSidebar(!toggleSidebar);
+  };
+
   return (
     <div className='flex justify-between items-center p-4 text-gray-300 shadow-md bg-[#343940]'>
       <div className='flex items-center gap-4'>
-      <IoIosMenu className='text-2xl'/>
+      <IoIosMenu className='text-2xl cursor-pointer' onClick={handleToggleSidebar} />
         <h3 className='text-sm'>Home</h3>
 
-        <h3 className='text-sm'>Contact</h3>
+        <h3 className=''>Contact</h3>
       </div>
 
       <div className='flex items-center gap-4'>
