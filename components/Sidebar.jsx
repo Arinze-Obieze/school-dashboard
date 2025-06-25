@@ -86,8 +86,13 @@ function Sidebar({ isOpen, setIsOpen }) {
   const [openDropdowns, setOpenDropdowns] = React.useState({});
   const handleClose = () => setIsOpen(false);
 
-  const handleDropdown = (label) => {
+  const handleDropdown = (label, e) => {
+    e.stopPropagation(); // Prevent link navigation
     setOpenDropdowns((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  const handleMenuClick = () => {
+    setIsOpen(false);
   };
 
   return (
@@ -96,8 +101,6 @@ function Sidebar({ isOpen, setIsOpen }) {
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
-   
-
       {/* Header */}
       <div>
         <div className="text-center mt-4 mb-2 px-4 pt-2 flex place-items-center justify-between">
@@ -129,37 +132,35 @@ function Sidebar({ isOpen, setIsOpen }) {
       <div className="flex-1 overflow-auto">
         <ul className="px-2 space-y-1">
           {menuItems.map((item, i) => (
-            <li key={i}>
+            <li key={i} className="relative">
+              {/* Dropdown parent with subItems */}
               {item.subItems ? (
-                <>
-                  <button
-                    type="button"
-                    className={`flex items-center gap-3 px-4 py-2 rounded w-full hover:bg-gray-700 focus:outline-none ${item.href === '/' ? 'bg-[#3b82f6]' : ''}`}
-                    onClick={() => handleDropdown(item.label)}
+                <div className="flex items-center">
+                  <Link
+                    href={item.href}
+                    className={`flex-1 flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700 ${item.href === '/' ? 'bg-[#3b82f6]' : ''}`}
+                    onClick={handleMenuClick}
                   >
                     <span>{item.icon}</span>
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.badge && (
                       <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">{item.badge}</span>
                     )}
+                  </Link>
+                  <button
+                    type="button"
+                    className="px-2 focus:outline-none"
+                    onClick={(e) => handleDropdown(item.label, e)}
+                    aria-label={openDropdowns[item.label] ? 'Collapse' : 'Expand'}
+                  >
                     {openDropdowns[item.label] ? <FaChevronUp /> : <FaChevronDown />}
                   </button>
-                  {openDropdowns[item.label] && (
-                    <ul className="ml-8 mt-1 space-y-1">
-                      {item.subItems.map((sub, j) => (
-                        <li key={j}>
-                          <Link href={sub.href} className="block px-4 py-2 rounded hover:bg-gray-600 text-sm">
-                            {sub.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </>
+                </div>
               ) : (
                 <Link
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700 ${item.href === '/' ? 'bg-[#3b82f6]' : ''}`}
+                  onClick={handleMenuClick}
                 >
                   <span>{item.icon}</span>
                   <span className="flex-1">{item.label}</span>
@@ -167,6 +168,18 @@ function Sidebar({ isOpen, setIsOpen }) {
                     <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">{item.badge}</span>
                   )}
                 </Link>
+              )}
+              {/* Dropdown subItems */}
+              {item.subItems && openDropdowns[item.label] && (
+                <ul className="ml-8 mt-1 space-y-1">
+                  {item.subItems.map((sub, j) => (
+                    <li key={j}>
+                      <Link href={sub.href} className="block px-4 py-2 rounded hover:bg-gray-600 text-sm" onClick={handleMenuClick}>
+                        {sub.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               )}
             </li>
           ))}
@@ -180,6 +193,7 @@ function Sidebar({ isOpen, setIsOpen }) {
               <Link
                 href={item.href}
                 className="flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700"
+                onClick={handleMenuClick}
               >
                 <span>{item.icon}</span>
                 <span>{item.label}</span>
