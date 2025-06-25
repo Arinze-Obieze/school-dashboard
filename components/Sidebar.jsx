@@ -2,20 +2,20 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  FaHome, FaBook, FaWpforms, FaGraduationCap,
-  FaShoppingCart, FaBookMedical, FaUser,
+  FaHome, FaBook, FaWpforms, FaGraduationCap,  FaUser,
   FaCog, FaComments, FaSignOutAlt
 } from 'react-icons/fa';
 
 import { FaTimes } from 'react-icons/fa'; // import close icon
+import { MdOutlinePayments } from 'react-icons/md';
 
 const menuItems = [
     { label: "Dashboard", icon: <FaHome />, href: "/" },
     { label: "Exams / Result", icon: <FaBook />, href: "/exams" },
-    { label: "Training Forms", icon: <FaWpforms />, href: "/training-forms" },
+    { label: "Registration Forms", icon: <FaWpforms />, href: "/registration-forms" },
     { label: "Courses", icon: <FaGraduationCap />, href: "/courses" },
     { label: "Fellowship Forms", icon: <FaGraduationCap />, href: "/fellowship-forms" },
-    { label: "College Payments", icon: <FaShoppingCart />, href: "/college-payments" },
+    { label: "Payments", icon: <MdOutlinePayments />, href: "/payments" },
   //   { label: "Approved Dissertations", icon: <FaBookMedical />, href: "/approved-dissertations" },
     { label: "Academic Records", icon: <FaWpforms />, href: "/academic-records" },
     { label: "My Profile", icon: <FaUser />, href: "/profile", badge: "New" },
