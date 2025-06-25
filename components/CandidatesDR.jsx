@@ -15,7 +15,9 @@ export default function CandidatesDashboardReport() {
 
       {/* Exam Status Label */}
       <div className="text-center text-sm font-bold text-gray-200 mb-2">Exam Status</div>
-
+  
+  {/* User Label */}
+  <div className="text-white font-semibold mb-2">User</div>
       {/* Progress Bar */}
       <div className="w-full bg-gray-700 rounded h-3 mb-6 relative">
         <div
@@ -26,8 +28,7 @@ export default function CandidatesDashboardReport() {
         <span className=" absolute right-0 top-0 -mt-6 text-gray-400 font-semibold text-sm">5%</span>
       </div>
 
-      {/* User Label */}
-      <div className="text-green-500 font-semibold mb-6">User</div>
+    
 
       {/* Stats Section */}
       <div className="flex bg-[#2f3339] py-4 justify-between border-t border-gray-600 pt-4 text-center text-xs">

@@ -9,12 +9,13 @@ import {
 
 const menuItems = [
   { label: "Dashboard", icon: <FaHome />, href: "/" },
-  { label: "Exam Forms", icon: <FaBook />, href: "/exam-forms" },
+  { label: "Exams / Result", icon: <FaBook />, href: "/exams" },
   { label: "Training Forms", icon: <FaWpforms />, href: "/training-forms" },
+  { label: "Courses", icon: <FaGraduationCap />, href: "/courses" },
   { label: "Fellowship Forms", icon: <FaGraduationCap />, href: "/fellowship-forms" },
   { label: "College Payments", icon: <FaShoppingCart />, href: "/college-payments" },
-  { label: "Approved Dissertations", icon: <FaBookMedical />, href: "/approved-dissertations" },
-  { label: "Submit Proposal", icon: <FaWpforms />, href: "/submit-proposal" },
+//   { label: "Approved Dissertations", icon: <FaBookMedical />, href: "/approved-dissertations" },
+  { label: "Academic Records", icon: <FaWpforms />, href: "/academic-records" },
   { label: "My Profile", icon: <FaUser />, href: "/profile", badge: "New" },
   { label: "Update User", icon: <FaWpforms />, href: "/update-user" },
 ];

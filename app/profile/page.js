@@ -11,21 +11,9 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+    <div className=" bg-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
         <h1 className="text-2xl font-bold mb-6 text-center">Profile</h1>
-
-        {/* View & Edit Personal Info */}
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-4">View & Edit Personal Info</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input className="p-2 border rounded" type="text" placeholder="Full Name" />
-            <input className="p-2 border rounded" type="email" placeholder="Email" />
-            <input className="p-2 border rounded" type="text" placeholder="Phone" />
-            <input className="p-2 border rounded" type="text" placeholder="Address" />
-          </div>
-          <button className="mt-4 w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save Changes</button>
-        </section>
 
         {/* Upload Passport Photo */}
         <section className="mb-6">
@@ -43,8 +31,18 @@ const ProfilePage = () => {
             <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Upload</button>
           </div>
         </section>
-
-        {/* Update Password */}
+    {/* View & Edit Personal Info */}
+    <section className="mb-6">
+          <h2 className="text-xl font-semibold mb-4">View & Edit Personal Info</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input className="p-2 border rounded" type="text" placeholder="Full Name" />
+            <input className="p-2 border rounded" type="email" placeholder="Email" />
+            <input className="p-2 border rounded" type="text" placeholder="Phone" />
+            <input className="p-2 border rounded" type="text" placeholder="Address" />
+          </div>
+          <button className="mt-4 w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save Changes</button>
+        </section>
+        {/* Update Password
         <section className="mb-6">
           <h2 className="text-xl font-semibold mb-4">Update Password</h2>
           <div className="grid grid-cols-1 gap-4">
@@ -53,7 +51,7 @@ const ProfilePage = () => {
             <input className="p-2 border rounded" type="password" placeholder="Confirm New Password" />
           </div>
           <button className="mt-4 w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Update Password</button>
-        </section>
+        </section> */}
 
         {/* Download Student ID Card */}
         <section>
