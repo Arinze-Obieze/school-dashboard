@@ -37,6 +37,10 @@ import { LuMessagesSquare } from 'react-icons/lu';
 import { GrResources } from "react-icons/gr";
 import { MdOutlinePayments } from 'react-icons/md';
 import { useAuth } from '../context/AuthContext';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { db } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const menuItems = [
     { label: "Dashboard", icon: <FaHome />, href: "/" },
@@ -118,8 +122,20 @@ const menuItems = [
   ];
 
 function Sidebar({ isOpen, setIsOpen }) {
-  const { logout } = useAuth();
-  const [openDropdowns, setOpenDropdowns] = React.useState({});
+  const { user, logout } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [openDropdowns, setOpenDropdowns] = useState({});
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      const ref = doc(db, 'users', user.uid);
+      const snap = await getDoc(ref);
+      if (snap.exists()) setProfile(snap.data());
+    };
+    fetchProfile();
+  }, [user]);
   const handleClose = () => setIsOpen(false);
 
   const handleDropdown = (label, e) => {
@@ -146,11 +162,11 @@ function Sidebar({ isOpen, setIsOpen }) {
         <FaTimes className="text-xl cursor-pointer" onClick={handleClose} />
       </div>
         </div>
-
         <div className="flex border-t items-center gap-3 px-4 py-3 border-b border-gray-500">
-          <img src="/c.jpg" alt="User" className="w-10 h-10 rounded-full" />
-          <div>
-            <p className="text-sm overflow-hidden">CHRISTOPHER Adimchukwu</p>
+          <img src={profile?.photoURL || "/c.jpg"} alt="User" className="w-10 h-10 rounded-full" />
+          <div className="overflow-hidden">
+            <p className="text-sm font-semibold truncate">{profile ? `${profile.surname || ''} ${profile.firstname || ''} ${profile.middlename || ''}`.trim() : 'Loading...'}</p>
+            <p className="text-xs text-gray-400 truncate">{profile?.email || ''}</p>
           </div>
         </div>
       </div>
@@ -167,59 +183,66 @@ function Sidebar({ isOpen, setIsOpen }) {
       {/* Menu */}
       <div className="flex-1 overflow-auto">
         <ul className="px-2 space-y-1">
-          {menuItems.map((item, i) => (
-            <li key={i} className="relative">
-              {/* Dropdown parent with subItems */}
-              {item.subItems ? (
-                <div className="flex items-center">
+          {menuItems.map((item, i) => {
+            // Determine if this item or any of its subItems is active
+            const isActive = pathname === item.href || (item.subItems && item.subItems.some(sub => pathname === sub.href));
+            return (
+              <li key={i} className="relative">
+                {/* Dropdown parent with subItems */}
+                {item.subItems ? (
+                  <div className="flex items-center">
+                    <Link
+                      href={item.href}
+                      className={`flex-1 flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700 ${isActive ? 'bg-[#3b82f6] text-white' : ''}`}
+                      onClick={handleMenuClick}
+                    >
+                      <span>{item.icon}</span>
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.badge && (
+                        <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">{item.badge}</span>
+                      )}
+                    </Link>
+                    <button
+                      type="button"
+                      className="px-2 focus:outline-none"
+                      onClick={(e) => handleDropdown(item.label, e)}
+                      aria-label={openDropdowns[item.label] ? 'Collapse' : 'Expand'}
+                    >
+                      {openDropdowns[item.label] ? <FaChevronUp /> : <FaChevronDown />}
+                    </button>
+                  </div>
+                ) : (
                   <Link
                     href={item.href}
-                    className={`flex-1 flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700 ${item.href === '/' ? 'bg-[#3b82f6]' : ''}`}
+                    className={`flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700 ${isActive ? 'bg-[#3b82f6] text-white' : ''}`}
                     onClick={handleMenuClick}
                   >
                     <span>{item.icon}</span>
-                    <span className="flex-1 text-left">{item.label}</span>
+                    <span className="flex-1">{item.label}</span>
                     {item.badge && (
                       <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">{item.badge}</span>
                     )}
                   </Link>
-                  <button
-                    type="button"
-                    className="px-2 focus:outline-none"
-                    onClick={(e) => handleDropdown(item.label, e)}
-                    aria-label={openDropdowns[item.label] ? 'Collapse' : 'Expand'}
-                  >
-                    {openDropdowns[item.label] ? <FaChevronUp /> : <FaChevronDown />}
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700 ${item.href === '/' ? 'bg-[#3b82f6]' : ''}`}
-                  onClick={handleMenuClick}
-                >
-                  <span>{item.icon}</span>
-                  <span className="flex-1">{item.label}</span>
-                  {item.badge && (
-                    <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">{item.badge}</span>
-                  )}
-                </Link>
-              )}
-              {/* Dropdown subItems */}
-              {item.subItems && openDropdowns[item.label] && (
-                <ul className="ml-8 mt-1 space-y-1">
-                  {item.subItems.map((sub, j) => (
-                    <li key={j}>
-                      <Link href={sub.href} className="block px-4 py-2 rounded hover:bg-gray-600 text-sm flex items-center gap-2" onClick={handleMenuClick}>
-                        <span>{sub.icon}</span>
-                        <span>{sub.label}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
+                )}
+                {/* Dropdown subItems */}
+                {item.subItems && openDropdowns[item.label] && (
+                  <ul className="ml-8 mt-1 space-y-1">
+                    {item.subItems.map((sub, j) => {
+                      const isSubActive = pathname === sub.href;
+                      return (
+                        <li key={j}>
+                          <Link href={sub.href} className={`block px-4 py-2 rounded hover:bg-gray-600 text-sm flex items-center gap-2 ${isSubActive ? 'bg-[#3b82f6] text-white' : ''}`} onClick={handleMenuClick}>
+                            <span>{sub.icon}</span>
+                            <span>{sub.label}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         <div className="px-4 mt-6 text-gray-400 text-sm">MISCELLANEOUS</div>
