@@ -96,46 +96,62 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#23272f]">
-      <form onSubmit={step === 1 ? handleInfoSubmit : handlePhotoSubmit} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md" encType="multipart/form-data">
-        <h2 className="text-2xl mb-6 text-white text-center">Sign Up</h2>
-        {error && <div className="mb-4 text-red-500">{error}</div>}
-        {step === 1 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input name="surname" placeholder="Surname*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.surname} onChange={handleChange} required />
-            <input name="firstname" placeholder="First Name*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.firstname} onChange={handleChange} required />
-            <input name="middlename" placeholder="Middle Name*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.middlename} onChange={handleChange} required />
-            <input name="email" type="email" placeholder="Email Address*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.email} onChange={handleChange} required />
-            <input name="password" type="password" placeholder="Password*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.password} onChange={handleChange} required />
-            <input name="mobile" placeholder="Mobile*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.mobile} onChange={handleChange} required />
-            <input name="address" placeholder="Contact Address*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.address} onChange={handleChange} required />
-            <input name="institution" placeholder="Institution*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.institution} onChange={handleChange} required />
-            <select name="gender" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.gender} onChange={handleChange} required>
-              <option value="">Select Gender*</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-            <select name="nationality" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.nationality} onChange={handleChange}>
-              <option value="">Select Nationality (optional)</option>
-              {countries.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <input name="dob" type="date" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.dob} onChange={handleChange} />
-          </div>
-        )}
-        {step === 2 && (
-          <div className="flex flex-col gap-4">
-            <label className="text-white">Upload Passport Photo*</label>
-            <input name="photo" type="file" accept="image/*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" onChange={handleChange} required />
-            {form.photo && (
-              <img src={form.photo ? URL.createObjectURL(form.photo) : ''} alt="Preview" className="w-32 h-32 object-cover rounded mx-auto mt-2" />
-            )}
-          </div>
-        )}
-        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6" disabled={loading}>{loading ? (step === 1 ? 'Registering...' : 'Uploading...') : (step === 1 ? 'Next: Upload Photo' : 'Finish Registration')}</button>
-        <p className="mt-4 text-gray-400 text-sm text-center">
-          Already have an account? <a href="/login" className="text-blue-400 hover:underline">Login</a>
-        </p>
-      </form>
+    <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center bg-[#23272f]">
+      {/* Side panel for large screens */}
+      <div className="hidden lg:flex flex-col justify-center items-center w-1/2 h-full bg-gradient-to-br from-blue-900 to-blue-600 text-white mx-12 p-12">
+        <img src="/logo-50x100.jpg" alt="Logo" width={120} height={120} className="mb-8" />
+        <h1 className="text-4xl font-bold mb-4">Join Our Community!</h1>
+        <p className="text-lg mb-8 text-center max-w-md">Create your account to access courses, exams, resources, and more. Start your academic journey with us today.</p>
+        <div className="w-64 h-64 bg-white/10 rounded-2xl flex items-center justify-center">
+          {/* You can replace this with an illustration or SVG */}
+          <img src="/globe.svg" alt="Illustration" className="w-40 h-40" />
+        </div>
+      </div>
+      {/* Main form area */}
+      <div className="flex flex-1 flex-col items-center justify-center w-full lg:w-1/2 px-4 py-8">
+        <div className="flex justify-center mb-6 lg:hidden">
+          <img src="/logo-50x100.jpg" alt="Logo" width={120} height={120} />
+        </div>
+        <form onSubmit={step === 1 ? handleInfoSubmit : handlePhotoSubmit} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md" encType="multipart/form-data">
+          <h2 className="text-2xl mb-6 text-white text-center">Sign Up</h2>
+          {error && <div className="mb-4 text-red-500">{error}</div>}
+          {step === 1 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input name="surname" placeholder="Surname*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.surname} onChange={handleChange} required />
+              <input name="firstname" placeholder="First Name*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.firstname} onChange={handleChange} required />
+              <input name="middlename" placeholder="Middle Name*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.middlename} onChange={handleChange} required />
+              <input name="email" type="email" placeholder="Email Address*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.email} onChange={handleChange} required />
+              <input name="password" type="password" placeholder="Password*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.password} onChange={handleChange} required />
+              <input name="mobile" placeholder="Mobile*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.mobile} onChange={handleChange} required />
+              <input name="address" placeholder="Contact Address*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.address} onChange={handleChange} required />
+              <input name="institution" placeholder="Institution*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.institution} onChange={handleChange} required />
+              <select name="gender" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.gender} onChange={handleChange} required>
+                <option value="">Select Gender*</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+              <select name="nationality" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.nationality} onChange={handleChange}>
+                <option value="">Select Nationality (optional)</option>
+                {countries.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <input name="dob" type="date" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.dob} onChange={handleChange} />
+            </div>
+          )}
+          {step === 2 && (
+            <div className="flex flex-col gap-4">
+              <label className="text-white">Upload Passport Photo*</label>
+              <input name="photo" type="file" accept="image/*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" onChange={handleChange} required />
+              {form.photo && (
+                <img src={form.photo ? URL.createObjectURL(form.photo) : ''} alt="Preview" className="w-32 h-32 object-cover rounded mx-auto mt-2" />
+              )}
+            </div>
+          )}
+          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6" disabled={loading}>{loading ? (step === 1 ? 'Registering...' : 'Uploading...') : (step === 1 ? 'Next: Upload Photo' : 'Finish Registration')}</button>
+          <p className="mt-4 text-gray-400 text-sm text-center">
+            Already have an account? <a href="/login" className="text-blue-400 hover:underline">Login</a>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
