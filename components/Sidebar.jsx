@@ -36,6 +36,7 @@ import {
 import { LuMessagesSquare } from 'react-icons/lu';
 import { GrResources } from "react-icons/gr";
 import { MdOutlinePayments } from 'react-icons/md';
+import { useAuth } from '../context/AuthContext';
 
 const menuItems = [
     { label: "Dashboard", icon: <FaHome />, href: "/" },
@@ -120,6 +121,7 @@ const menuItems = [
   ];
 
 function Sidebar({ isOpen, setIsOpen }) {
+  const { logout } = useAuth();
   const [openDropdowns, setOpenDropdowns] = React.useState({});
   const handleClose = () => setIsOpen(false);
 
@@ -224,18 +226,27 @@ function Sidebar({ isOpen, setIsOpen }) {
         </ul>
 
         <div className="px-4 mt-6 text-gray-400 text-sm">MISCELLANEOUS</div>
-
         <ul className="px-2 mt-2 space-y-1">
           {miscItems.map((item, i) => (
             <li key={i}>
-              <Link
-                href={item.href}
-                className="flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700"
-                onClick={handleMenuClick}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
+              {item.label === 'Logout' ? (
+                <button
+                  className="flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700 w-full text-left"
+                  onClick={() => { logout(); setIsOpen(false); }}
+                >
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              ) : (
+                <Link
+                  href={item.href}
+                  className="flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700"
+                  onClick={handleMenuClick}
+                >
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              )}
             </li>
           ))}
         </ul>
