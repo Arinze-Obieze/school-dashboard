@@ -148,8 +148,7 @@ export default function SignupPage() {
             const res = await fetch('/api/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tx_ref: response.transaction_id, userId }),
-            });
+              body: JSON.stringify({ id: response.transaction_id, tx_ref: response.tx_ref, userId }),            });
             const data = await res.json();
             if (data.status === 'success') {
               setPaymentStatus('success');
