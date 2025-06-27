@@ -4,14 +4,16 @@ import { adminDb } from '@/firebaseAdmin';
 export const runtime = 'nodejs';
 
 export async function POST(req) {
+  
   try {
-    const { id, userId } = await req.json();
-    if (!id || !userId) {
-      return NextResponse.json({ error: 'Missing id or userId' }, { status: 400 });
+    const { tx_ref, userId } = await req.json();
+    if (!tx_ref || !userId) {
+      return NextResponse.json({ error: 'Missing tx_ref or userId' }, { status: 400 });
     }
-    // Call Flutterwave verify endpoint with numeric transaction ID
+    
+    // Call Flutterwave verify endpoint
     const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY;
-    const verifyUrl = `https://api.flutterwave.com/v3/transactions/${id}/verify`;
+    const verifyUrl = `https://api.flutterwave.com/v3/transactions/${tx_ref}/verify`;
     const flwRes = await fetch(verifyUrl, {
       headers: {
         Authorization: `Bearer ${FLW_SECRET_KEY}`,

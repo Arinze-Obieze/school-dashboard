@@ -148,15 +148,13 @@ export default function SignupPage() {
             const res = await fetch('/api/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: response.transaction_id, tx_ref: response.tx_ref, userId }),            });
+              body: JSON.stringify({ tx_ref: response.transaction_id, userId }),
+            });
             const data = await res.json();
             if (data.status === 'success') {
               setPaymentStatus('success');
               setStep(4); // Registration complete
-              // Attempt to close the Flutterwave modal
-              if (window.FlutterwaveCheckout && typeof window.FlutterwaveCheckout.close === 'function') {
-                window.FlutterwaveCheckout.close();
-              }
+            
               // Fallback: try to close window (for popup mode)
               if (typeof window.close === 'function') {
                 window.close();
