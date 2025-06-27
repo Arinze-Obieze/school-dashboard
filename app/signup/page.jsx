@@ -1,12 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../../firebase';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, doc, getDoc } from 'firebase/firestore';
 
 const countries = [
-  'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'United States', 'United Kingdom', 'Canada', 'India', 'China', 'Germany', 'France', 'Italy', 'Spain', 'Brazil', 'Australia', 'Other'
+  'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Other'
 ];
 
 async function uploadToR2(file, userId) {
@@ -30,15 +30,36 @@ export default function SignupPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1: info, 2: photo
+  const [step, setStep] = useState(1); // 1: info, 2: photo, 3: payment
   const [userId, setUserId] = useState('');
   const [photoURL, setPhotoURL] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('pending'); // 'pending' | 'success'
   const router = useRouter();
 
   const handleChange = e => {
     const { name, value, files } = e.target;
     setForm(f => ({ ...f, [name]: files ? files[0] : value }));
   };
+
+  // Check if user has incomplete registration (e.g., payment not done)
+  useEffect(() => {
+    if (!userId) return;
+    const checkPayment = async () => {
+      try {
+        const ref = doc(db, 'users', userId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.paymentStatus === 'success') {
+            setStep(4); // Registration complete
+          } else {
+            setStep(3); // Go to payment step
+          }
+        }
+      } catch (e) {}
+    };
+    checkPayment();
+  }, [userId]);
 
   // Step 1: Register user (no photo)
   const handleInfoSubmit = async (e) => {
@@ -86,13 +107,76 @@ export default function SignupPage() {
         institution: form.institution,
         nationality: form.nationality || '',
         photoURL: uploadedPhotoURL,
-        createdAt: new Date().toISOString()
-      });
-      router.push('/');
+        createdAt: new Date().toISOString(),
+        paymentStatus: 'pending',
+      }, { merge: true });
+      setStep(3);
     } catch (err) {
       setError(err.message || 'Photo upload failed.');
     }
     setLoading(false);
+  };
+
+  // Step 3: Handle payment with Flutterwave
+  const handleFlutterwavePayment = () => {
+    setError('');
+    // Load Flutterwave inline script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.flutterwave.com/v3.js';
+    script.async = true;
+    script.onload = () => {
+      window.FlutterwaveCheckout({
+        public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
+        tx_ref: `${userId}-${Date.now()}`,
+        amount: 21000,
+        currency: 'NGN',
+        payment_options: 'banktransfer,card',
+        customer: {
+          email: form.email,
+          name: `${form.surname} ${form.firstname}`,
+          phonenumber: form.mobile,
+        },
+        customizations: {
+          title: 'School Registration Fee',
+          description: 'Registration payment for dashboard',
+          logo: '/logo-50x100.png',
+        },
+        callback: async function(response) {
+          // Call backend to verify payment
+          setLoading(true);
+          try {
+            const res = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tx_ref: response.transaction_id, userId }),
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+              setPaymentStatus('success');
+              setStep(4); // Registration complete
+              // Attempt to close the Flutterwave modal
+              if (window.FlutterwaveCheckout && typeof window.FlutterwaveCheckout.close === 'function') {
+                window.FlutterwaveCheckout.close();
+              }
+              // Fallback: try to close window (for popup mode)
+              if (typeof window.close === 'function') {
+                window.close();
+              }
+              router.push('/'); // Redirect to dashboard
+            } else {
+              setError('Payment not completed.');
+            }
+          } catch (e) {
+            setError('Payment verification failed.');
+          }
+          setLoading(false);
+        },
+        onclose: function() {
+          // User closed payment modal
+        },
+      });
+    };
+    document.body.appendChild(script);
   };
 
   return (
@@ -112,7 +196,7 @@ export default function SignupPage() {
         <div className="flex justify-center mb-6 lg:hidden">
           <img src="/logo-50x100.jpg" alt="Logo" width={120} height={120} />
         </div>
-        <form onSubmit={step === 1 ? handleInfoSubmit : handlePhotoSubmit} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md" encType="multipart/form-data">
+        <form onSubmit={step === 1 ? handleInfoSubmit : step === 2 ? handlePhotoSubmit : (e) => { e.preventDefault(); handleFlutterwavePayment(); }} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md" encType="multipart/form-data">
           <h2 className="text-2xl mb-6 text-white text-center">Sign Up</h2>
           {error && <div className="mb-4 text-red-500">{error}</div>}
           {step === 1 && (
@@ -144,6 +228,17 @@ export default function SignupPage() {
               {form.photo && (
                 <img src={form.photo ? URL.createObjectURL(form.photo) : ''} alt="Preview" className="w-32 h-32 object-cover rounded mx-auto mt-2" />
               )}
+            </div>
+          )}
+          {step === 3 && (
+            <div className="flex flex-col gap-4 items-center">
+              <h3 className="text-xl text-white font-bold mb-2">Registration Payment</h3>
+              <p className="text-gray-300 text-center mb-2">To complete your registration, please pay <span className="font-bold text-green-400">₦21,000</span> to the Fidelity Bank account below using Flutterwave.</p>
+            
+              <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded mt-4" disabled={loading || paymentStatus === 'success'}>
+                {loading ? 'Processing...' : 'Pay ₦21,000 Now'}
+              </button>
+              <p className="text-gray-400 text-xs mt-2">You will be redirected to Flutterwave to complete your payment securely.</p>
             </div>
           )}
           <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6" disabled={loading}>{loading ? (step === 1 ? 'Registering...' : 'Uploading...') : (step === 1 ? 'Next: Upload Photo' : 'Finish Registration')}</button>
