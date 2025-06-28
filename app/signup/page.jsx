@@ -28,6 +28,7 @@ export default function SignupPage() {
     surname: '', firstname: '', middlename: '', email: '', password: '',
     dob: '', gender: '', mobile: '', address: '', institution: '', nationality: '', photo: null
   });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: info, 2: photo, 3: payment
@@ -41,7 +42,7 @@ export default function SignupPage() {
     setForm(f => ({ ...f, [name]: files ? files[0] : value }));
   };
 
-  // Check if user has incomplete registration (e.g., payment not done)
+  // Check if user has incomplete registration (e.g., payment not done) 
   useEffect(() => {
     if (!userId) return;
     const checkPayment = async () => {

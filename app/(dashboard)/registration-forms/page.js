@@ -12,19 +12,19 @@ const registrationCards = [
     title: 'Membership',
     icon: <FaUserPlus className="text-3xl" />,
     bg: '#1abc9c',
-    href: '/forms/membership'
+    href: '/registration-forms/membership'
   },
   {
     title: 'Followship',
     icon: <FaHandshake className="text-3xl" />,
     bg: '#f39c12',
-    href: '/forms/followship'
+    href: '/registration-forms/followship'
   },
   {
     title: 'Mentorship',
     icon: <FaChalkboardTeacher className="text-3xl" />,
     bg: '#9b59b6',
-    href: '/forms/mentorship'
+    href: '/registration-forms/mentorship'
   }
 ]
 
