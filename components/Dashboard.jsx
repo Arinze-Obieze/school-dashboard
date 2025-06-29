@@ -28,7 +28,7 @@ const Dashboard = () => {
     <div className="p-6 space-y-6 bg-[#3e444d]">
       {/* Welcome Message */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-100">Welcome back, CHRISTOPHER 👋</h1>
+        <h1 className="text-2xl font-semibold text-gray-100">Welcome back 👋</h1>
         <p className="text-gray-400 mt-1">Here’s what’s happening with your academic profile.</p>
       </div>
 

@@ -25,7 +25,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center bg-[#23272f]">
       {/* Side panel for large screens */}
       <div className="hidden lg:flex  mx-12 flex-col justify-center items-center w-1/2 h-full bg-gradient-to-br from-blue-900 to-blue-600 text-white p-12">
-        <img src="/logo-50x100.jpg" alt="Logo" width={120} height={120} className="mb-8" />
+        <img src="/logo-50x100.jpg" alt="Logo" width={300} height={120} className="mb-8" />
         <h1 className="text-4xl font-bold mb-4">Welcome Back!</h1>
         <p className="text-lg mb-8 text-center max-w-md">Access your dashboard, manage your courses, and stay connected with your academic journey.</p>
         <div className="w-64 h-64 bg-white/10 rounded-2xl flex items-center justify-center">
@@ -36,7 +36,7 @@ export default function LoginPage() {
       {/* Main form area */}
       <div className="flex flex-1 flex-col items-center justify-center w-full lg:w-1/2 px-4 py-8">
         <div className="flex justify-center mb-6 lg:hidden">
-          <img src="/logo-50x100.jpg" alt="Logo" width={120} height={120} />
+          <img src="/logo-50x100.jpg" alt="Logo" width={300} height={120} />
         </div>
         <form onSubmit={handleLogin} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-sm">
           <h2 className="text-2xl mb-6 text-white text-center">Login</h2>

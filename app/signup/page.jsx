@@ -181,7 +181,7 @@ export default function SignupPage() {
     <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center bg-[#23272f]">
       {/* Side panel for large screens */}
       <div className="hidden lg:flex flex-col justify-center items-center w-1/2 h-full bg-gradient-to-br from-blue-900 to-blue-600 text-white mx-12 p-12">
-        <img src="/logo-50x100.jpg" alt="Logo" width={120} height={120} className="mb-8" />
+        <img src="/logo-50x100.jpg" alt="Logo" width={300} height={120} className="mb-8" />
         <h1 className="text-4xl font-bold mb-4">Join Our Community!</h1>
         <p className="text-lg mb-8 text-center max-w-md">Create your account to access courses, exams, resources, and more. Start your academic journey with us today.</p>
         <div className="w-64 h-64 bg-white/10 rounded-2xl flex items-center justify-center">
@@ -192,7 +192,7 @@ export default function SignupPage() {
       {/* Main form area */}
       <div className="flex flex-1 flex-col items-center justify-center w-full lg:w-1/2 px-4 py-8">
         <div className="flex justify-center mb-6 lg:hidden">
-          <img src="/logo-50x100.jpg" alt="Logo" width={120} height={120} />
+          <img src="/logo-50x100.jpg" alt="Logo" width={300} height={120} />
         </div>
         <form onSubmit={step === 1 ? handleInfoSubmit : step === 2 ? handlePhotoSubmit : (e) => { e.preventDefault(); handleFlutterwavePayment(); }} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md" encType="multipart/form-data">
           <h2 className="text-2xl mb-6 text-white text-center">Sign Up</h2>
@@ -233,13 +233,11 @@ export default function SignupPage() {
               <h3 className="text-xl text-white font-bold mb-2">Registration Payment</h3>
               <p className="text-gray-300 text-center mb-2">To complete your registration, please pay <span className="font-bold text-green-400">₦21,000</span> to the Fidelity Bank account below using Flutterwave.</p>
             
-              <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded mt-4" disabled={loading || paymentStatus === 'success'}>
-                {loading ? 'Processing...' : 'Pay ₦21,000 Now'}
-              </button>
+             
               <p className="text-gray-400 text-xs mt-2">You will be redirected to Flutterwave to complete your payment securely.</p>
             </div>
           )}
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6" disabled={loading}>{loading ? (step === 1 ? 'Registering...' : 'Uploading...') : (step === 1 ? 'Next: Upload Photo' : 'Finish Registration')}</button>
+          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6" disabled={loading}>{loading ? (step === 1 ? 'Registering...' : 'Uploading...') : (step === 1 ? 'Next: Upload Photo' : 'Pay ₦21,000 Now To Finish Registration')}</button>
           <p className="mt-4 text-gray-400 text-sm text-center">
             Already have an account? <a href="/login" className="text-blue-400 hover:underline">Login</a>
           </p>

@@ -100,7 +100,9 @@ export default function StepAttachmentsDeclaration({ formData, handleChange, han
                 name="declarationDate"
                 value={declarationDate}
                 onChange={e => setDeclarationDate(e.target.value)}
-                className="block w-full bg-gray-800 border border-gray-700 rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-200"
+                className="block w-full bg-gray-800 border border-gray-700 
+                rounded-lg shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2
+                 focus:ring-blue-500 focus:border-blue-500 text-gray-200"
                 required
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -116,9 +118,12 @@ export default function StepAttachmentsDeclaration({ formData, handleChange, han
       <div className="pt-4">
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3.5 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 
+          hover:to-blue-600 text-white font-bold py-3.5 px-6 rounded-lg 
+          shadow-md hover:shadow-lg cursor-pointer
+          transition-all duration-200 flex items-center justify-center"
         >
-          Submit Application
+          Submit Application & Pay
           <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>

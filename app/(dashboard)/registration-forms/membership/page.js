@@ -9,7 +9,7 @@ import StepExaminationDetails from '@/components/form/StepExaminationDetails';
 import StepPersonalDetails from '@/components/form/StepPersonalDetails';
 import StepProfessionalExperience from '@/components/form/StepProfessionalExperience';
 import { useState } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 
@@ -169,8 +169,7 @@ export default function MembershipRegistration() {
     }
     // Handle form submission here
     toast.success('Application submitted successfully!');
-    // console.log('Form submitted:', formData);
-    // alert('Application submitted successfully!');
+  
   };
 
   const alternativeRouteAnyFieldFilled = () => {
