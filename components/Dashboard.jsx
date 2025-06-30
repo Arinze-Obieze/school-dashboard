@@ -14,8 +14,8 @@ const Dashboard = () => {
   ];
 
   const upcomingExams = [
-    { title: 'MTH101 - Calculus I', date: '2025-07-05', time: '9:00 AM' },
-    { title: 'PHY102 - Mechanics', date: '2025-07-07', time: '2:00 PM' },
+    { title: 'PSY501 - Psychopathology', date: '2025-07-05', time: '9:00 AM' },
+    { title: 'PSY505 - Cognitive Behavioral Therapy', date: '2025-07-07', time: '2:00 PM' },
   ];
 
   const notifications = [

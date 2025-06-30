@@ -1,6 +1,7 @@
-import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { NextResponse } from 'next/server';
 import { getR2Client, R2Config } from '@/lib/r2Client';
+import { NextResponse } from 'next/server';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+
 export const runtime = 'nodejs';
 
 export async function POST(req) {
@@ -10,8 +11,6 @@ export async function POST(req) {
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
-
-    // Collect all files
     const fileFields = [
       'degreeCertificates',
       'trainingCertificate',
@@ -20,26 +19,25 @@ export async function POST(req) {
       'passportPhoto',
     ];
     const s3 = getR2Client();
-    const uploaded = {};
+    const uploadedUrls = {};
     for (const field of fileFields) {
       const file = formData.get(field);
-      if (!file) continue;
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const key = `${userId}/membership-registration/${field}-${Date.now()}-${file.name}`;
-      const contentType = file.type || 'application/octet-stream';
-      await s3.send(new PutObjectCommand({
-        Bucket: R2Config.CLOUDFLARE_R2_BUCKET,
-        Key: key,
-        Body: buffer,
-        ContentType: contentType,
-      }));
-      const url = `${R2Config.CLOUDFLARE_R2_PUBLIC_URL}/${key}`;
-      uploaded[field] = url;
+      if (file && typeof file === 'object' && file.size > 0) {
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const key = `${userId}/membership-registration/${field}-${Date.now()}-${file.name}`;
+        await s3.send(new PutObjectCommand({
+          Bucket: R2Config.CLOUDFLARE_R2_BUCKET,
+          Key: key,
+          Body: buffer,
+          ContentType: file.type || 'application/octet-stream',
+        }));
+        uploadedUrls[field] = `${R2Config.CLOUDFLARE_R2_PUBLIC_URL}/${key}`;
+      }
     }
-    return NextResponse.json({ urls: uploaded });
+    return NextResponse.json({ urls: uploadedUrls });
   } catch (e) {
-    console.error('Membership file upload failed:', e);
+    console.error('Membership multi-file upload failed:', e);
     return NextResponse.json({ error: 'Upload failed', details: e.message }, { status: 500 });
   }
 }
