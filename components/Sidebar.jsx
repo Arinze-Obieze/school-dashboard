@@ -106,9 +106,9 @@ const menuItems = [
     {
         label: "Registration Forms", icon: <FaWpforms />, href: "/registration-forms",
         subItems: [
-            { label: "Membership", href: "/forms/membership", icon: <FaUserPlus /> },
-            { label: "Followship", href: "/forms/followship", icon: <FaHandshake /> },
-            { label: "Mentorship", href: "/forms/mentorship", icon: <FaChalkboardTeacher /> },
+            { label: "Membership", href: "/registration-forms/membership", icon: <FaUserPlus /> },
+            { label: "Followship", href: "/registration-forms/followship", icon: <FaHandshake /> },
+            { label: "Mentorship", href: "/registration-forms/mentorship", icon: <FaChalkboardTeacher /> },
         ]
     },
   
