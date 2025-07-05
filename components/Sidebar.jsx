@@ -108,7 +108,7 @@ const menuItems = [
         subItems: [
             { label: "Membership", href: "/registration-forms/membership", icon: <FaUserPlus /> },
             { label: "Followship", href: "/registration-forms/followship", icon: <FaHandshake /> },
-            { label: "Mentorship", href: "/registration-forms/mentorship", icon: <FaChalkboardTeacher /> },
+            { label: "Primary", href: "/registration-forms/primary", icon: <FaChalkboardTeacher /> },
         ]
     },
   

@@ -21,10 +21,10 @@ const registrationCards = [
     href: '/registration-forms/followship'
   },
   {
-    title: 'Mentorship',
+    title: 'Primary',
     icon: <FaChalkboardTeacher className="text-3xl" />,
     bg: '#9b59b6',
-    href: '/registration-forms/mentorship'
+    href: '/registration-forms/primary'
   }
 ]
 
