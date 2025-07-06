@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function ApplicationInstructions({ onBegin }) {
+export default function PrimaryInstructions({ onBegin }) {
   const [checked, setChecked] = useState(false);
 
   return (
