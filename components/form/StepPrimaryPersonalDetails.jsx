@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function StepFellowshipPersonalDetails({ formData, handleChange }) {
+export default function StepPrimaryPersonalDetails({ formData, handleChange }) {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-purple-300 border-b border-gray-700 pb-2">Personal Informations</h2>
