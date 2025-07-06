@@ -35,36 +35,10 @@ export default function PrimaryRegistration() {
     degreeYear: '',
     degreeSpecialization: '',
     trainingProgramInstitution: '',
-    trainingDuration: '',
+    yearofgraduation: '',
     trainingCertificateObtained: false,
     
-    // Professional Experience
-    currentInstitution: '',
-    currentPosition: '',
-    employmentFrom: '',
-    employmentTo: '',
-    totalExperience: '',
-    hospitalsWorked: [{ name: '', duration: '' }],
-    supervisedPractice: false,
-    supervisorDetails: '',
-    
-    // Alternative Route
-    experienceProof: null,
-    conferencesAttended: [{ name: '', year: '' }],
-    
-    // Examination Details
-    examCenter: '',
-    understandsWritten: false,
-    understandsPractical: false,
-    understandsCaseBased: false,
-    
-    // Attachments
-    degreeCertificates: null,
-    trainingCertificate: null,
-    workExperienceProof: null,
-    cpdCertificates: null,
-    passportPhoto: null,
-    feeReceipt: null,
+  
   });
   const [declarationChecked, setDeclarationChecked] = useState(false);
   const [declarationDate, setDeclarationDate] = useState("");
@@ -75,7 +49,7 @@ export default function PrimaryRegistration() {
   useEffect(() => {
     if (!user || !user.uid) return;
     // Check if membership registration exists
-    fetch(`/api/get-membership-registration?userId=${user.uid}`)
+    fetch(`/api/get-primary-registration?userId=${user.uid}`)
       .then(res => res.json())
       .then(data => {
         if (data.exists) {
@@ -136,27 +110,6 @@ export default function PrimaryRegistration() {
       );
     }
     if (step === 2) {
-      // Professional Experience
-      return (
-        formData.currentInstitution && formData.currentPosition && formData.employmentFrom && formData.employmentTo && formData.totalExperience
-      );
-    }
-    if (step === 3) {
-      // Alternative Route: skippable unless any field is filled
-      const anyFilled = formData.experienceProof || (formData.conferencesAttended && formData.conferencesAttended.some(c => c.name || c.year)) || formData.cpdCertificates;
-      if (!anyFilled) return true; // allow skip
-      // If any field is filled, all must be filled
-      return (
-        formData.experienceProof && formData.cpdCertificates && formData.conferencesAttended && formData.conferencesAttended.every(c => c.name && c.year)
-      );
-    }
-    if (step === 4) {
-      // Examination Details
-      return (
-        formData.examCenter && formData.understandsWritten && formData.understandsPractical && formData.understandsCaseBased
-      );
-    }
-    if (step === 5) {
       // Attachments & Declaration
       return (
         formData.degreeCertificates && formData.trainingCertificate && formData.workExperienceProof && formData.cpdCertificates && formData.passportPhoto && declarationChecked && declarationDate
@@ -186,8 +139,8 @@ export default function PrimaryRegistration() {
     script.onload = () => {
       window.FlutterwaveCheckout({
         public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-        tx_ref: `${userId}-membership-${Date.now()}`,
-        amount: 220000,
+        tx_ref: `${userId}-Primary-${Date.now()}`,
+        amount: ,
         currency: 'NGN',
         payment_options: 'banktransfer,card',
         customer: {
@@ -196,8 +149,8 @@ export default function PrimaryRegistration() {
           phonenumber: phoneNumber,
         },
         customizations: {
-          title: 'Membership Registration Fee',
-          description: 'Membership registration payment for WACCPS',
+          title: 'Primary Registration Fee',
+          description: 'Primary registration payment for WACCPS',
           logo: '/logo-50x100.jpg',
         },
         callback: async function(response) {
@@ -253,14 +206,14 @@ export default function PrimaryRegistration() {
         }
       });
       formDataToSend.append('userId', user.uid); // Use Firebase Auth userId
-      const uploadRes = await fetch('/api/upload-membership-files', {
+      const uploadRes = await fetch('/api/upload-Primary-files', {
         method: 'POST',
         body: formDataToSend,
       });
       if (!uploadRes.ok) throw new Error('File upload failed');
       const uploadData = await uploadRes.json();
       // 2. Save form data + file URLs to Firestore
-      const saveRes = await fetch('/api/save-membership-registration', {
+      const saveRes = await fetch('/api/save-primary-registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -307,7 +260,7 @@ export default function PrimaryRegistration() {
                   WEST AFRICAN COLLEGE OF CLINICAL PHYSIOLOGY SCIENCES
                 </h1>
                 <p className="mt-3 text-xl text-blue-200">
-                  Membership Examination Application
+                  Primary Examination Application
                 </p>
               </div>
               {!showForm ? (
@@ -330,7 +283,7 @@ export default function PrimaryRegistration() {
                     </div>
                   </div>
 
-                  {/* Step 1: Personal Details */}
+                  {/* Step 1: Personal Information */}
                   {step === 0 && (
                     <StepPersonalDetails formData={formData} handleChange={handleChange} />
                   )}
@@ -338,34 +291,6 @@ export default function PrimaryRegistration() {
                   {/* Step 2: Educational Qualifications */}
                   {step === 1 && (
                     <StepEducationalQualifications formData={formData} handleChange={handleChange} />
-                  )}
-
-                  {/* Step 3: Professional Experience */}
-                  {step === 2 && (
-                    <StepProfessionalExperience formData={formData} handleChange={handleChange} handleArrayChange={handleArrayChange} addArrayItem={addArrayItem} removeArrayItem={removeArrayItem} />
-                  )}
-
-                  {/* Step 4: Alternative Route */}
-                  {step === 3 && (
-                    <StepAlternativeRoute formData={formData} handleChange={handleChange} handleArrayChange={handleArrayChange} addArrayItem={addArrayItem} removeArrayItem={removeArrayItem} />
-                  )}
-
-                  {/* Step 5: Examination Details */}
-                  {step === 4 && (
-                    <StepExaminationDetails formData={formData} handleChange={handleChange} />
-                  )}
-
-                  {/* Step 6: Attachments & Declaration */}
-                  {step === 5 && (
-                    <StepAttachmentsDeclaration
-                      formData={formData}
-                      handleChange={handleChange}
-                      handleFileChange={handleFileChange}
-                      declarationChecked={declarationChecked}
-                      setDeclarationChecked={setDeclarationChecked}
-                      declarationDate={declarationDate}
-                      setDeclarationDate={setDeclarationDate}
-                    />
                   )}
 
                   {/* Navigation Buttons */}
