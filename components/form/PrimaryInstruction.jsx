@@ -1,10 +1,10 @@
 export default function MembershipInstructions() {
   const handleDownload = () => {
     // You can implement PDF generation/download logic here
-    const pdfUrl = '/forms/WACCPS MEMBERSHIP FORM.pdf';
+    const pdfUrl = '/forms/WACCPS PRIMARY FORM.pdf';
     const link = document.createElement('a');
     link.href = pdfUrl;
-    link.download = 'WACCPS-Membership-Form.pdf'; // Suggested filename
+    link.download = 'WACCPS-PRIMARY-Form.pdf'; // Suggested filename
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
