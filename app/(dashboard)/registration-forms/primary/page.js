@@ -1,23 +1,20 @@
 'use client'
-import ApplicationInstructions from '@/components/form/ApplicationInstructions';
+import PrimaryApplicationInstructions from '@/components/form/PrimaryApplicationInstructions';
 import FormNavigation from '@/components/form/FormNavigation';
-import MembershipInstructions from '@/components/form/MembershipInstructions';
-import StepAlternativeRoute from '@/components/form/StepAlternativeRoute';
-import StepAttachmentsDeclaration from '@/components/form/StepAttachmentsDeclaration';
-import StepEducationalQualifications from '@/components/form/StepEducationalQualifications';
-import StepExaminationDetails from '@/components/form/StepExaminationDetails';
-import StepPersonalDetails from '@/components/form/StepPersonalDetails';
-import StepProfessionalExperience from '@/components/form/StepProfessionalExperience';
+import PrimaryInstructions from '@/components/form/PrimaryInstructions';
+import PrimaryStepAttachmentsDeclaration from '@/components/form/PrimaryStepAttachmentsDeclaration';
+import PrimaryEducationalDetails from '@/components/form/PrimaryEducationalDetails';
+import StepPrimaryPersonalDetails from '@/components/form/StepPrimaryPersonalDetails';
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
 import {  toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useRouter } from 'next/navigation';
-import MembershipSuccess from './success';
+import PrimarySuccess from './success';
 
 
 
-export default function MembershipRegistration() {
+export default function PrimaryRegistration() {
   const [step, setStep] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -34,7 +31,7 @@ export default function MembershipRegistration() {
     stateOfOrigin: '',
     
     // Educational Qualifications
-    degreeInstitution: '',
+    priamryInstitution: '',
     degreeYear: '',
     degreeSpecialization: '',
     trainingProgramInstitution: '',
