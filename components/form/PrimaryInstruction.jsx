@@ -1,4 +1,4 @@
-export default function MembershipInstructions() {
+export default function PrimaryInstructions() {
   const handleDownload = () => {
     // You can implement PDF generation/download logic here
     const pdfUrl = '/forms/WACCPS PRIMARY FORM.pdf';
