@@ -24,28 +24,24 @@ export default function MembershipInstructions() {
       </button>
 
       <h2 className="text-xl font-bold mb-2 text-blue-300 pr-20">
-        Training Requirements for Membership Examination
+        Training Requirements for Primary Examination
       </h2>
       
       <p className="mb-2">
-        The West African College of Clinical Physiology Sciences (WACCPS) requires candidates 
-        to undergo structured training programs before sitting for the Membership examination. 
-        These programs may include:
+        The primary examination is the first step in the WACCPS's examination process. It 
+        assesses candidates' foundational knowledge in clinical physiology sciences.
       </p>
       
       <ul className="list-decimal list-inside mb-2 ml-4 space-y-1">
         <li>
-          <b>Clinical Physiology Training:</b> Candidates must complete a recognized training 
-          program in clinical physiology sciences.
+          <b>Eligibility:</b> Candidates must meet specific requirements, including a 
+          relevant degree and completion of a certified training program..
         </li>
         <li>
-          <b>Practical Experience:</b> Hands-on training in relevant clinical settings.
+          <b>Examination format:</b> The examination consist of multiple-choice questions,
+          short-answer questions, and/or practical/clinical components.
         </li>
-        <li>
-          <b>Supervised Clinical Practice:</b> Candidates are required to complete a specified 
-          period of supervised clinical practice.
-        </li>
-      </ul>
+        </ul>
 
       <h3 className="mb-2 mt-6 font-semibold text-lg">
         Alternative Route for Membership
