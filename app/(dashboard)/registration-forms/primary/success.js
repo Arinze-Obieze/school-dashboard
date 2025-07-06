@@ -27,7 +27,7 @@ const GROUPS = [
   },
 ];
 
-export default function MembershipSuccess() {
+export default function PrimarySuccess() {
   const router = useRouter();
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function MembershipSuccess() {
           <div className="text-center mb-8">
             <FaCheckCircle className="mx-auto text-green-400 text-5xl mb-4" />
             <h1 className="text-3xl font-bold text-white mb-3">
-              Membership Registration Successful!
+              Primary Registration Successful!
             </h1>
             <p className="text-gray-300 text-lg">
               Thank you for joining us! Get started by connecting with our community.
