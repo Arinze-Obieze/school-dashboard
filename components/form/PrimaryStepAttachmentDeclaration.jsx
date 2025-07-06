@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function StepAttachmentsDeclaration({ formData, handleChange, handleFileChange, declarationChecked, setDeclarationChecked, declarationDate, setDeclarationDate }) {
+export default function PrimaryStepAttachmentsDeclaration({ formData, handleChange, handleFileChange, declarationChecked, setDeclarationChecked, declarationDate, setDeclarationDate }) {
   return (
     <div className="space-y-8 bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-lg">
       <div className="text-center mb-8">
