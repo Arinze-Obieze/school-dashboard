@@ -239,7 +239,7 @@ export default function SignupPage() {
           )}
           <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6" disabled={loading}>{loading ? (step === 1 ? 'Registering...' : 'Uploading...') : (step === 1 ? 'Next: Upload Photo' : 'Pay ₦21,000 Now To Finish Registration')}</button>
           <p className="mt-4 text-gray-400 text-sm text-center">
-            Already have an account? <a href="/login" className="text-blue-400 hover:underline">Login</a>
+            Already have an account? <a href="/login" className="text-blue-400 hover:underline">Apply Now</a>
           </p>
         </form>
       </div>
