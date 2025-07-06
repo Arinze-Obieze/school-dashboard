@@ -44,36 +44,6 @@ export default function MembershipInstructions() {
         </ul>
 
       <h3 className="mb-2 mt-6 font-semibold text-lg">
-        Alternative Route for Membership
-      </h3>
-      
-      <p className="mb-2">
-        Alternatively, candidates with significant experience in clinical physiology may be 
-        eligible to sit for the Membership examination. Requirements may include:
-      </p>
-      
-      <ul className="list-decimal list-inside mb-2 ml-4 space-y-1">
-        <li>
-          <b>Years of Experience:</b> A minimum of 5 years of experience working in a clinical 
-          physiology unit, with evidence of continuous professional development.
-        </li>
-        <li>
-          <b>Professional Development:</b> Candidates must provide evidence of ongoing professional 
-          development, including attendance at conferences, workshops, and relevant training programs.
-        </li>
-      </ul>
-
-      <h3 className="mb-2 mt-6 font-semibold text-lg">
-        Examination Format
-      </h3>
-      
-      <ul className="list-disc list-inside mb-2 ml-4 space-y-1">
-        <li>Written components (e.g., multiple-choice questions, short-answer questions)</li>
-        <li>Practical components (e.g., clinical skills assessment)</li>
-        <li>Case-based discussions</li>
-      </ul>
-
-      <h3 className="mb-2 mt-6 font-semibold text-lg">
         Submission
       </h3>
       
