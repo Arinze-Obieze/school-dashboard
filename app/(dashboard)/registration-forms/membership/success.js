@@ -1,38 +1,34 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+
 import { FaWhatsapp, FaTelegram, FaCheckCircle, FaArrowRight } from "react-icons/fa";
 
 const GROUPS = [
   {
     name: "WhatsApp Group 1",
     description: "Join our main WhatsApp group for updates and discussions.",
-    url: "https://chat.whatsapp.com/your-group-link-1",
+    url: "https://wa.me/+2347081924221",
     icon: <FaWhatsapp className="text-green-500" size={28} />,
     color: "bg-green-500/10 hover:bg-green-500/20",
   },
-  {
-    name: "WhatsApp Group 2",
-    description: "Alternative WhatsApp group for members.",
-    url: "https://chat.whatsapp.com/your-group-link-2",
-    icon: <FaWhatsapp className="text-green-500" size={28} />,
-    color: "bg-green-500/10 hover:bg-green-500/20",
-  },
-  {
-    name: "Telegram Group",
-    description: "Join our Telegram group for announcements.",
-    url: "https://t.me/your-telegram-group",
-    icon: <FaTelegram className="text-blue-400" size={28} />,
-    color: "bg-blue-500/10 hover:bg-blue-500/20",
-  },
+  // {
+  //   name: "WhatsApp Group 2",
+  //   description: "Alternative WhatsApp group for members.",
+  //   url: "https://chat.whatsapp.com/your-group-link-2",
+  //   icon: <FaWhatsapp className="text-green-500" size={28} />,
+  //   color: "bg-green-500/10 hover:bg-green-500/20",
+  // },
+  // {
+  //   name: "Telegram Group",
+  //   description: "Join our Telegram group for announcements.",
+  //   url: "https://t.me/your-telegram-group",
+  //   icon: <FaTelegram className="text-blue-400" size={28} />,
+  //   color: "bg-blue-500/10 hover:bg-blue-500/20",
+  // },
 ];
 
 export default function MembershipSuccess() {
-  const router = useRouter();
 
-  useEffect(() => {
-    // Optionally, check if user is authenticated or has access
-  }, []);
+ 
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
@@ -70,8 +66,6 @@ export default function MembershipSuccess() {
               </a>
             ))}
           </div>
-
-     
         </div>
       </div>
     </div>

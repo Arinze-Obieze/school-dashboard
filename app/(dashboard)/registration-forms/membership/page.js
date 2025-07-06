@@ -57,6 +57,7 @@ export default function MembershipRegistration() {
     
     // Examination Details
     examCenter: '',
+    course: '',
     understandsWritten: false,
     understandsPractical: false,
     understandsCaseBased: false,

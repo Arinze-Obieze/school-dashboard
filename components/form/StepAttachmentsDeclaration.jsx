@@ -86,6 +86,7 @@ export default function StepAttachmentsDeclaration({ formData, handleChange, han
             </div>
             <label htmlFor="declaration" className="ml-3 text-gray-300">
               <span className="text-red-500">*</span> I hereby declare that all information provided in this application is true, complete, and accurate to the best of my knowledge. I understand that any false statements or misrepresentations may result in the rejection of my application or termination of membership if discovered later. I agree to abide by the rules, regulations, and ethical standards of the West African College of Clinical Physiology Sciences (WACCPS).
+              <strong> Please note that all payments are non-refundable.</strong>
             </label>
           </div>
 

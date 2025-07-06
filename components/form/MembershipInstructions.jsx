@@ -83,10 +83,12 @@ export default function MembershipInstructions() {
       
       <ul className="list-disc list-inside mb-2 ml-4 space-y-1">
         <li>Submit completed form + required documents</li>
-        <li>
+<li>        <strong> Please note that all payments are non-refundable.</strong>
+</li>
+        {/* <li>
           Application Fee: <span className="font-bold">₦220,000 / $155</span> 
           (Payable via WACCPS website payment portal)
-        </li>
+        </li> */}
       </ul>
 
       <div className="mt-4 text-sm text-gray-200 space-y-1">

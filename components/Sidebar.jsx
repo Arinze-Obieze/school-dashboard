@@ -104,7 +104,7 @@ const menuItems = [
   ]
 },
     {
-        label: "Registration Forms", icon: <FaWpforms />, href: "/registration-forms",
+        label: "Course Registration Forms", icon: <FaWpforms />, href: "/registration-forms",
         subItems: [
           { label: "Primary", href: "/registration-forms/primary", icon: <FaChalkboardTeacher /> },
           { label: "Membership", href: "/registration-forms/membership", icon: <FaUserPlus /> },

@@ -1,4 +1,5 @@
 import React from 'react';
+import CourseSelect from './CourseSelect';
 
 export default function StepExaminationDetails({ formData, handleChange }) {
   return (
@@ -25,6 +26,13 @@ export default function StepExaminationDetails({ formData, handleChange }) {
               </div>
             ))}
           </div>
+        </div>
+        <div>
+          <CourseSelect
+            value={formData.course}
+            onChange={handleChange}
+            required
+          />
         </div>
         <div className="border-t border-gray-700 pt-4">
           <h3 className="text-lg font-medium text-blue-300 mb-4">Examination Format Acknowledgment</h3>
