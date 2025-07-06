@@ -195,7 +195,7 @@ export default function SignupPage() {
           <img src="/logo-50x100.jpg" alt="Logo" width={300} height={120} />
         </div>
         <form onSubmit={step === 1 ? handleInfoSubmit : step === 2 ? handlePhotoSubmit : (e) => { e.preventDefault(); handleFlutterwavePayment(); }} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md" encType="multipart/form-data">
-          <h2 className="text-2xl mb-6 text-white text-center">Sign Up</h2>
+          <h2 className="text-2xl mb-6 text-white text-center">Application Form</h2>
           {error && <div className="mb-4 text-red-500">{error}</div>}
           {step === 1 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -230,8 +230,8 @@ export default function SignupPage() {
           )}
           {step === 3 && (
             <div className="flex flex-col gap-4 items-center">
-              <h3 className="text-xl text-white font-bold mb-2">Registration Payment</h3>
-              <p className="text-gray-300 text-center mb-2">To complete your registration, please pay <span className="font-bold text-green-400">₦21,000</span> to the WACCPS using Flutterwave.</p>
+              <h3 className="text-xl text-white font-bold mb-2">Application Fee</h3>
+              <p className="text-gray-300 text-center mb-2">To complete your application, please pay <span className="font-bold text-green-400">₦21,000</span> to the WACCPS using Flutterwave.</p>
             
              
               <p className="text-gray-400 text-xs mt-2">You will be redirected to Flutterwave to complete your payment securely.</p>

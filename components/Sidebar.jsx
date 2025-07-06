@@ -106,9 +106,9 @@ const menuItems = [
     {
         label: "Registration Forms", icon: <FaWpforms />, href: "/registration-forms",
         subItems: [
-            { label: "Membership", href: "/registration-forms/membership", icon: <FaUserPlus /> },
+          { label: "Primary", href: "/registration-forms/primary", icon: <FaChalkboardTeacher /> },
+          { label: "Membership", href: "/registration-forms/membership", icon: <FaUserPlus /> },
             { label: "Followship", href: "/registration-forms/followship", icon: <FaHandshake /> },
-            { label: "Primary", href: "/registration-forms/primary", icon: <FaChalkboardTeacher /> },
         ]
     },
   
@@ -231,7 +231,7 @@ function Sidebar({ isOpen, setIsOpen }) {
                       const isSubActive = pathname === sub.href;
                       return (
                         <li key={j}>
-                          <Link href={sub.href} className={`block px-4 py-2 rounded hover:bg-gray-600 text-sm flex items-center gap-2 ${isSubActive ? 'bg-[#3b82f6] text-white' : ''}`} onClick={handleMenuClick}>
+                          <Link href={sub.href} className={` px-4 py-2 rounded hover:bg-gray-600 text-sm flex items-center gap-2 ${isSubActive ? 'bg-[#3b82f6] text-white' : ''}`} onClick={handleMenuClick}>
                             <span>{sub.icon}</span>
                             <span>{sub.label}</span>
                           </Link>

@@ -9,6 +9,12 @@ import Card from '@/components/Card'
 
 const registrationCards = [
   {
+    title: 'Primary',
+    icon: <FaChalkboardTeacher className="text-3xl" />,
+    bg: '#9b59b6',
+    href: '/registration-forms/primary'
+  },
+  {
     title: 'Membership',
     icon: <FaUserPlus className="text-3xl" />,
     bg: '#1abc9c',
@@ -20,12 +26,7 @@ const registrationCards = [
     bg: '#f39c12',
     href: '/registration-forms/followship'
   },
-  {
-    title: 'Primary',
-    icon: <FaChalkboardTeacher className="text-3xl" />,
-    bg: '#9b59b6',
-    href: '/registration-forms/primary'
-  }
+
 ]
 
 function RegistrationForms() {
