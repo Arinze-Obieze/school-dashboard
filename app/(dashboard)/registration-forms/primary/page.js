@@ -31,12 +31,10 @@ export default function PrimaryRegistration() {
     stateOfOrigin: '',
     
     // Educational Qualifications
-    priamryInstitution: '',
+    nameofInstitution: '',
     degreeYear: '',
-    degreeSpecialization: '',
-    trainingProgramInstitution: '',
-    yearofgraduation: '',
-    trainingCertificateObtained: false,
+    yearofgraduation: false,
+    
     
   
   });
