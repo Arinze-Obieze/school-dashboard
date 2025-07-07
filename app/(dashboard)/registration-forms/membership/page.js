@@ -1,7 +1,7 @@
 'use client'
-import ApplicationInstructions from '@/components/form/ApplicationInstructions';
+import ApplicationInstructions from '@/components/form/ui/ApplicationInstructions';
 import FormNavigation from '@/components/form/FormNavigation';
-import FormInstructions from '@/components/form/FormInstructions';
+import FormInstructions from '@/components/form/ui/FormInstructions';
 import StepAlternativeRoute from '@/components/form/StepAlternativeRoute';
 import StepAttachmentsDeclaration from '@/components/form/StepAttachmentsDeclaration';
 import StepEducationalQualifications from '@/components/form/StepEducationalQualifications';

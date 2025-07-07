@@ -1,5 +1,5 @@
 import React from 'react';
-import CourseSelect from './CourseSelect';
+import CourseSelect from './ui/CourseSelect';
 
 export default function StepExaminationDetails({ formData, handleChange }) {
   return (

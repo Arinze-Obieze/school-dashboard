@@ -1,5 +1,6 @@
 'use client'
 import { FaCheckCircle, FaUniversity, FaBook, FaClipboardCheck } from 'react-icons/fa';
+import CourseSelect from '../ui/CourseSelect';
 
 export default function StepExamDetails({ formData, handleChange }) {
   const examCenters = [
@@ -54,6 +55,13 @@ export default function StepExamDetails({ formData, handleChange }) {
           </div>
         )}
       </div>
+
+      {/* Course Selection  */}
+      <CourseSelect 
+       value={formData.course}
+       onChange={handleChange}
+       required={true}
+      />
 
       {/* Examination Format Acknowledgment */}
       <div className="mb-6">

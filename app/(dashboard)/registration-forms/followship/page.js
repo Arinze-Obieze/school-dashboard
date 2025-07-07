@@ -1,12 +1,12 @@
 'use client'
-import ApplicationInstructions from '@/components/form/ApplicationInstructions';
+import ApplicationInstructions from '@/components/form/ui/ApplicationInstructions';
 import FormNavigation from '@/components/form/FormNavigation';
 
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import FormInstructions from '@/components/form/FormInstructions';
+import FormInstructions from '@/components/form/ui/FormInstructions';
 import StepHigherQualifications from '@/components/form/Followship/StepHigherQualifications';
 import StepPersonalDetails from '@/components/form/Followship/StepPersonalDetails';
 import StepProfessionalExperience from '@/components/form/Followship/StepProfessionalExperience';
@@ -68,6 +68,7 @@ export default function FellowshipRegistration() {
     understandsWritten: false,
     understandsCaseDefense: false,
     understandsThesis: false,
+    course: '',
     
     // SECTION G: ATTACHMENTS & DECLARATION
     mwccpsCertificate: null,
@@ -126,7 +127,7 @@ export default function FellowshipRegistration() {
   ],
   contactEmail: "info.waccps@gmail.com",
   contactPhone: "07061543295",
-  downloadFilename: "WACCPS-Fellowship-Form.pdf"
+  downloadFilename: "WACCPS MEMBERSHIP FORM.pdf"
 };
 
   // Handlers for input, file, array, navigation, validation, and submit logic will be implemented here, tailored for fellowship fields and steps.
@@ -216,7 +217,7 @@ export default function FellowshipRegistration() {
     if (step === 5) {
       // Examination Details
       return (
-        formData.examCenter && formData.understandsWritten && formData.understandsCaseDefense && formData.understandsThesis
+        formData.examCenter && formData.course && formData.understandsWritten && formData.understandsCaseDefense && formData.understandsThesis
       );
     }
     if (step === 6) {
