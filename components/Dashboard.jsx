@@ -8,9 +8,9 @@ import Card from './Card';
 const Dashboard = () => {
   // Sample data
   const stats = [
-    { title: 'Courses Enrolled', value: 8, icon: <FaBookOpen className="text-blue-500 text-xl" />, bg: '#23272f', href: '/courses' },
-    { title: 'GPA', value: 3.75, icon: <FaChartLine className="text-green-500 text-xl" />, bg: '#23272f', href: '/exams/gpa-tracker' },
-    { title: 'Outstanding Fees', value: '₦12,500', icon: <FaDollarSign className="text-red-500 text-xl" />, bg: '#23272f', href: '/payments' },
+    { title: 'Courses Enrolled', value: 0, icon: <FaBookOpen className="text-blue-500 text-xl" />, bg: '#23272f', href: '/courses' },
+    { title: 'GPA', value: 0, icon: <FaChartLine className="text-green-500 text-xl" />, bg: '#23272f', href: '/exams/gpa-tracker' },
+    { title: 'Outstanding Fees', value: '0', icon: <FaDollarSign className="text-red-500 text-xl" />, bg: '#23272f', href: '/payments' },
   ];
 
   const upcomingExams = [
