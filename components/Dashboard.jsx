@@ -22,7 +22,7 @@ const Dashboard = () => {
 
   const notifications = [
     { id: 1, message: 'School portal will be under maintenance this weekend.' },
-    { id: 2, message: 'New course materials will been uploaded soon.' },
+    { id: 2, message: 'Get to know your center.' },
     { id: 3, message: 'Deadline for registration is not yet out.' },
   ];
 
