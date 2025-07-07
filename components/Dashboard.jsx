@@ -14,14 +14,16 @@ const Dashboard = () => {
   ];
 
   const upcomingExams = [
-    { title: 'PSY501 - Psychopathology', date: '2025-07-05', time: '9:00 AM' },
+    {/*
+    { title: 'PSY501 - Psychopathology', date: '2025-07-05', time: '9:00 AM' hidden},
     { title: 'PSY505 - Cognitive Behavioral Therapy', date: '2025-07-07', time: '2:00 PM' },
+    */}
   ];
 
   const notifications = [
     { id: 1, message: 'School portal will be under maintenance this weekend.' },
-    { id: 2, message: 'New course materials have been uploaded for CSC201.' },
-    { id: 3, message: 'Deadline to register for 2nd semester ends July 3rd.' },
+    { id: 2, message: 'New course materials will been uploaded soon.' },
+    { id: 3, message: 'Deadline for registration is not yet out.' },
   ];
 
   return (
