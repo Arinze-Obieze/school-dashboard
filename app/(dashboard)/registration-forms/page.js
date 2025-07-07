@@ -21,10 +21,10 @@ const registrationCards = [
     href: '/registration-forms/membership'
   },
   {
-    title: 'Followship',
+    title: 'Fellowship',
     icon: <FaHandshake className="text-3xl" />,
     bg: '#f39c12',
-    href: '/registration-forms/followship'
+    href: '/registration-forms/fellowship'
   },
 
 ]

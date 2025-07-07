@@ -7,13 +7,13 @@ import { useState } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import FormInstructions from '@/components/form/ui/FormInstructions';
-import StepHigherQualifications from '@/components/form/Followship/StepHigherQualifications';
-import StepPersonalDetails from '@/components/form/Followship/StepPersonalDetails';
-import StepProfessionalExperience from '@/components/form/Followship/StepProfessionalExperience';
-import StepResearchPublications from '@/components/form/Followship/StepResearchPublications';
-import StepAlternativeRoute from '@/components/form/Followship/StepAlternativeRoute';
-import StepExamDetails from '@/components/form/Followship/StepExamDetails';
-import StepAttachmentsDeclaration from '@/components/form/Followship/StepAttachmentsDeclaration';
+import StepHigherQualifications from '@/components/form/Fellowship/StepHigherQualifications';
+import StepPersonalDetails from '@/components/form/Fellowship/StepPersonalDetails';
+import StepProfessionalExperience from '@/components/form/Fellowship/StepProfessionalExperience';
+import StepResearchPublications from '@/components/form/Fellowship/StepResearchPublications';
+import StepAlternativeRoute from '@/components/form/Fellowship/StepAlternativeRoute';
+import StepExamDetails from '@/components/form/Fellowship/StepExamDetails';
+import StepAttachmentsDeclaration from '@/components/form/Fellowship/StepAttachmentsDeclaration';
 
 export default function FellowshipRegistration() {
   const [step, setStep] = useState(0);
