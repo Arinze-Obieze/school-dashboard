@@ -17,13 +17,16 @@ export default function NotFound() {
           <div className="flex justify-center mb-6">
             <FiAlertTriangle className="text-5xl text-yellow-400" />
           </div>
-          
-          <h1 className="text-4xl font-bold text-gray-100 mb-3">404</h1>
-          <h2 className="text-2xl font-semibold text-gray-300 mb-4">Page Not Found Or Under Construction</h2>
-          
+
+  
+          <h1 className="text-4xl font-bold text-gray-100 mb-3 hidden">404</h1>
+          <h2 className="text-2xl font-semibold text-gray-300 mb-4">Page Still in Progress</h2>
+  
+  {/*
           <p className="text-gray-400 mb-6">
             Oops! The page you're looking for doesn't exist or  under construction.
           </p>
+*/}
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
