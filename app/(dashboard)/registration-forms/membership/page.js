@@ -1,7 +1,7 @@
 'use client'
 import ApplicationInstructions from '@/components/form/ApplicationInstructions';
 import FormNavigation from '@/components/form/FormNavigation';
-import MembershipInstructions from '@/components/form/MembershipInstructions';
+import FormInstructions from '@/components/form/FormInstructions';
 import StepAlternativeRoute from '@/components/form/StepAlternativeRoute';
 import StepAttachmentsDeclaration from '@/components/form/StepAttachmentsDeclaration';
 import StepEducationalQualifications from '@/components/form/StepEducationalQualifications';
@@ -76,6 +76,44 @@ export default function MembershipRegistration() {
   const { user } = useAuth();
   const router = useRouter();
 
+ // Instruction data for membership
+ const membershipData = {
+  title: "Training Requirements for Membership Examination",
+  description: "The West African College of Clinical Physiology Sciences (WACCPS) requires candidates to undergo structured training programs before sitting for the Membership examination.",
+  borderColor: "blue-400",
+  buttonColor: "blue-600",
+  textColor: "blue-300",
+  trainingRequirements: [
+    "Clinical Physiology Training: Candidates must complete a recognized training program in clinical physiology sciences.",
+    "Practical Experience: Hands-on training in relevant clinical settings.",
+    "Supervised Clinical Practice: Candidates are required to complete a specified period of supervised clinical practice."
+  ],
+  alternativeRouteTitle: "Alternative Route for Membership",
+  alternativeRouteDescription: "Alternatively, candidates with significant experience in clinical physiology may be eligible to sit for the Membership examination.",
+  alternativeRouteRequirements: [
+    "Years of Experience: A minimum of 5 years of experience working in a clinical physiology unit, with evidence of continuous professional development.",
+    "Professional Development: Candidates must provide evidence of ongoing professional development, including attendance at conferences, workshops, and relevant training programs."
+  ],
+  examinationFormat: [
+    "Written components (e.g., multiple-choice questions, short-answer questions)",
+    "Practical components (e.g., clinical skills assessment)",
+    "Case-based discussions"
+  ],
+  submissionRequirements: [
+    "Submit completed form + required documents",
+    "Please note that all payments are non-refundable."
+  ],
+  notes: [
+    "Incomplete forms will be rejected.",
+    "Successful candidates will receive an exam date via email."
+  ],
+  contactEmail: "info.waccps@gmail.com",
+  contactPhone: "07061543295",
+  downloadFilename: "WACCPS-Membership-Form.pdf"
+};
+
+
+  
   useEffect(() => {
     if (!user || !user.uid) return;
     // Check if membership registration exists
@@ -302,7 +340,7 @@ export default function MembershipRegistration() {
         <div className=" mx-auto lg:flex ">
           {/* <ToastContainer /> */}
           <div className=' flex-2'>
-            <MembershipInstructions />
+            <FormInstructions {...membershipData}/>
           </div>
           <div  className=" bg-gray-900 text-gray-100 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
@@ -315,7 +353,7 @@ export default function MembershipRegistration() {
                 </p>
               </div>
               {!showForm ? (
-                <ApplicationInstructions onBegin={() => setShowForm(true)} />
+                <ApplicationInstructions formName="Membership" onBegin={() => setShowForm(true)} />
               ) : (
                 <form onSubmit={submitForm} className="bg-gray-800 rounded-lg shadow-xl p-6 border border-blue-500">
                   {/* Progress Bar */}

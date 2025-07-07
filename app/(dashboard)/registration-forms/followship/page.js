@@ -1,18 +1,19 @@
 'use client'
 import ApplicationInstructions from '@/components/form/ApplicationInstructions';
-import FellowshipInstructions from '@/components/form/FellowshipInstructions';
 import FormNavigation from '@/components/form/FormNavigation';
-import StepFellowshipPersonalDetails from '@/components/form/StepFellowshipPersonalDetails';
-import StepFellowshipQualifications from '@/components/form/StepFellowshipQualifications';
-import StepFellowshipExperience from '@/components/form/StepFellowshipExperience';
-import StepFellowshipResearch from '@/components/form/StepFellowshipResearch';
-import StepFellowshipAlternativeRoute from '@/components/form/StepFellowshipAlternativeRoute';
-import StepFellowshipExamDetails from '@/components/form/StepFellowshipExamDetails';
-import StepFellowshipAttachmentsDeclaration from '@/components/form/StepFellowshipAttachmentsDeclaration';
+
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import FormInstructions from '@/components/form/FormInstructions';
+import StepHigherQualifications from '@/components/form/Followship/StepHigherQualifications';
+import StepPersonalDetails from '@/components/form/Followship/StepPersonalDetails';
+import StepProfessionalExperience from '@/components/form/Followship/StepProfessionalExperience';
+import StepResearchPublications from '@/components/form/Followship/StepResearchPublications';
+import StepAlternativeRoute from '@/components/form/Followship/StepAlternativeRoute';
+import StepExamDetails from '@/components/form/Followship/StepExamDetails';
+import StepAttachmentsDeclaration from '@/components/form/Followship/StepAttachmentsDeclaration';
 
 export default function FellowshipRegistration() {
   const [step, setStep] = useState(0);
@@ -33,6 +34,7 @@ export default function FellowshipRegistration() {
     gender: '',
     nationality: '',
     stateOfOrigin: '',
+    
     // SECTION B: HIGHER QUALIFICATIONS & SPECIALIZATION
     mwccpsAwardYear: '',
     mwccpsInstitution: '',
@@ -41,6 +43,7 @@ export default function FellowshipRegistration() {
     specializationArea: '',
     advancedCertificateObtained: false,
     additionalQualifications: [{ degree: '', institution: '', year: '' }],
+    
     // SECTION C: PROFESSIONAL EXPERIENCE & LEADERSHIP
     currentInstitution: '',
     currentJobTitle: '',
@@ -49,20 +52,24 @@ export default function FellowshipRegistration() {
     totalPracticeYears: '',
     leadershipRoles: [{ role: '', institution: '', duration: '' }],
     teachingExperience: [{ institution: '', role: '', duration: '' }],
+    
     // SECTION D: RESEARCH & PUBLICATIONS
     researchPapers: [{ title: '', journal: '', year: '' }],
     conferencePresentations: [{ title: '', event: '', year: '' }],
     researchSupervised: [{ title: '', institution: '', year: '' }],
+    
     // SECTION E: ALTERNATIVE ROUTE
     altRoles: [{ role: '', institution: '', duration: '' }],
     altAwards: '',
     altPolicyDocs: '',
+    
     // SECTION F: EXAMINATION DETAILS
     examCenter: '',
     understandsWritten: false,
     understandsCaseDefense: false,
     understandsThesis: false,
-    // SECTION G: ATTACHMENTS
+    
+    // SECTION G: ATTACHMENTS & DECLARATION
     mwccpsCertificate: null,
     trainingCertificates: null,
     employmentLetters: null,
@@ -70,13 +77,57 @@ export default function FellowshipRegistration() {
     conferenceCertificates: null,
     passportPhotos: null,
     feeReceipt: null,
-    // Declaration
     declarationChecked: false,
     declarationDate: '',
   });
+
+
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const totalSteps = 7;
+
+ // Instruction data for fellowship
+ const fellowshipData = {
+  title: "Fellowship Requirements (FWCCPS/DCP)",
+  description: "The West African College of Clinical Physiology Sciences (WACCPS) fellowship program requires advanced training and significant contributions to the field.",
+  borderColor: "purple-500",
+  buttonColor: "purple-600",
+  textColor: "purple-300",
+  trainingRequirements: [
+    "Advanced Clinical Physiology Training: Candidates must complete advanced training in a specialized area of clinical physiology sciences.",
+    "Research and Publication: Conduct original research, publish papers, and present at conferences.",
+    "Leadership and Expertise: Demonstrate leadership including mentorship, teaching, or professional service."
+  ],
+  alternativeRouteTitle: "Alternative Route for Fellowship",
+  alternativeRouteDescription: "Candidates with extensive experience may be eligible to sit for the Fellowship examination.",
+  alternativeRouteRequirements: [
+    "Years of Experience: Minimum 10 years in clinical physiology with evidence of significant contributions.",
+    "Professional Achievements: Publications, presentations, and leadership roles.",
+    "Interview: May be required for alternative route candidates."
+  ],
+  examinationFormat: [
+    "Advanced Written Papers",
+    "Clinical Case Defense",
+    "Research Thesis Evaluation"
+  ],
+  submissionRequirements: [
+    "MWCCPS Certificate",
+    "Professional Training Certificates",
+    "Employment Verification Letters",
+    "Published Papers (Minimum 2)",
+    "Conference Certificates",
+    "Passport Photos (2)",
+    "Application Fee Receipt",
+    "All payments are non-refundable"
+  ],
+  notes: [
+    "Incomplete applications will not be processed.",
+    "Interview may be required for alternative route candidates."
+  ],
+  contactEmail: "info.waccps@gmail.com",
+  contactPhone: "07061543295",
+  downloadFilename: "WACCPS-Fellowship-Form.pdf"
+};
 
   // Handlers for input, file, array, navigation, validation, and submit logic will be implemented here, tailored for fellowship fields and steps.
 
@@ -121,9 +172,19 @@ export default function FellowshipRegistration() {
   // Step validation logic
   const isStepValid = () => {
     if (step === 0) {
-      // Personal Details
+      // Personal Details validation
       return (
-        formData.fullName && formData.professionalTitle && formData.contactAddress && formData.city && formData.state && formData.country && formData.phoneNumber && formData.email && formData.dateOfBirth && formData.gender && formData.nationality && formData.stateOfOrigin
+        formData.fullName &&
+        formData.professionalTitle && // This checks if any radio is selected
+        formData.city &&
+        formData.state &&
+        formData.country &&
+        formData.phoneNumber &&
+        formData.email &&
+        formData.dateOfBirth &&
+        formData.gender && // This checks if any gender is selected
+        formData.nationality &&
+        formData.stateOfOrigin
       );
     }
     if (step === 1) {
@@ -233,12 +294,11 @@ export default function FellowshipRegistration() {
     setLoading(false);
   };
 
-  // UI rendering and step logic will be implemented below, using FellowshipInstructions and the new field structure.
   return (
     <>
       <div className="mx-auto lg:flex">
         <div className="flex-2">
-          <FellowshipInstructions />
+          <FormInstructions {...fellowshipData} />
         </div>
         <div className="bg-gray-900 text-gray-100 py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
@@ -251,7 +311,7 @@ export default function FellowshipRegistration() {
               </p>
             </div>
             {!showForm ? (
-              <FellowshipInstructions onBegin={() => setShowForm(true)} />
+              <ApplicationInstructions formName={'Followship'} onBegin={() => setShowForm(true)} />
             ) : (
               <form onSubmit={submitForm} className="bg-gray-800 rounded-lg shadow-xl p-6 border border-blue-500">
                 {/* Progress Bar */}
@@ -269,34 +329,64 @@ export default function FellowshipRegistration() {
                     ></div>
                   </div>
                 </div>
+
                 {/* Step 1: Personal Details */}
                 {step === 0 && (
-                  <StepFellowshipPersonalDetails formData={formData} handleChange={handleChange} />
+                  <StepPersonalDetails 
+                    formData={formData} 
+                    handleChange={handleChange} 
+                  />
                 )}
-                {/* Step 2: Higher Qualifications & Specialization */}
                 {step === 1 && (
-                  <StepFellowshipQualifications formData={formData} handleChange={handleChange} handleArrayChange={handleArrayChange} addArrayItem={addArrayItem} removeArrayItem={removeArrayItem} />
+                  <StepHigherQualifications 
+                    formData={formData} 
+                    handleChange={handleChange} 
+                    handleArrayChange={handleArrayChange} 
+                    addArrayItem={addArrayItem} 
+                    removeArrayItem={removeArrayItem} 
+                  />
                 )}
-                {/* Step 3: Professional Experience & Leadership */}
                 {step === 2 && (
-                  <StepFellowshipExperience formData={formData} handleChange={handleChange} handleArrayChange={handleArrayChange} addArrayItem={addArrayItem} removeArrayItem={removeArrayItem} />
+                  <StepProfessionalExperience 
+                    formData={formData} 
+                    handleChange={handleChange} 
+                    handleArrayChange={handleArrayChange} 
+                    addArrayItem={addArrayItem} 
+                    removeArrayItem={removeArrayItem} 
+                  />
                 )}
-                {/* Step 4: Research & Publications */}
                 {step === 3 && (
-                  <StepFellowshipResearch formData={formData} handleChange={handleChange} handleArrayChange={handleArrayChange} addArrayItem={addArrayItem} removeArrayItem={removeArrayItem} />
+                  <StepResearchPublications 
+                    formData={formData} 
+                    handleChange={handleChange} 
+                    handleArrayChange={handleArrayChange} 
+                    addArrayItem={addArrayItem} 
+                    removeArrayItem={removeArrayItem} 
+                  />
                 )}
-                {/* Step 5: Alternative Route (optional) */}
                 {step === 4 && (
-                  <StepFellowshipAlternativeRoute formData={formData} handleChange={handleChange} handleArrayChange={handleArrayChange} addArrayItem={addArrayItem} removeArrayItem={removeArrayItem} />
+                  <StepAlternativeRoute 
+                    formData={formData} 
+                    handleChange={handleChange} 
+                    handleArrayChange={handleArrayChange} 
+                    addArrayItem={addArrayItem} 
+                    removeArrayItem={removeArrayItem} 
+                  />
                 )}
-                {/* Step 6: Examination Details */}
                 {step === 5 && (
-                  <StepFellowshipExamDetails formData={formData} handleChange={handleChange} />
+                  <StepExamDetails 
+                    formData={formData} 
+                    handleChange={handleChange} 
+                  />
                 )}
-                {/* Step 7: Attachments & Declaration */}
                 {step === 6 && (
-                  <StepFellowshipAttachmentsDeclaration formData={formData} handleChange={handleChange} />
+                  <StepAttachmentsDeclaration 
+                    formData={formData} 
+                    handleChange={handleChange} 
+                    handleFileChange={handleFileChange} 
+                  />
                 )}
+
                 <FormNavigation 
                   step={step}
                   totalSteps={totalSteps}
