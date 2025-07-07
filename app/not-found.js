@@ -8,7 +8,7 @@ export default function NotFound() {
   return (
     <>
       <Head>
-        <title>404 - Page Not Found</title>
+        <title>Page In Progress</title>
         <meta name="description" content="The page you're looking for doesn't exist" />
       </Head>
 
