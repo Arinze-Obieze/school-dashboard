@@ -13,7 +13,8 @@ export async function POST(req) {
     if (!registrationData) {
       return NextResponse.json({ error: 'Missing Form Data' }, { status: 400 });
     }
-    const ref = adminDb.collection('users').doc(userId).collection('registration').doc('fellowship-registration');
+    // Save as a document (not collection) for fellowship-registration
+    const ref = adminDb.collection('users').doc(userId).collection('fellowship-registration');
     const docRef = await ref.add({
       ...registrationData,
       createdAt: new Date().toISOString(),

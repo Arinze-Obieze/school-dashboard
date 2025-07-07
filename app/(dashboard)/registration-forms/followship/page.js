@@ -240,6 +240,48 @@ export default function FellowshipRegistration() {
     if (step > 0) setStep(step - 1);
   };
 
+  // Flutterwave payment handler
+  const handleFlutterwavePayment = () => {
+    // You can customize the payment details as needed
+    const script = document.createElement('script');
+    script.src = 'https://checkout.flutterwave.com/v3.js';
+    script.async = true;
+    script.onload = () => {
+      window.FlutterwaveCheckout({
+        public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
+        tx_ref: `FW-FELLOWSHIP-${user.uid}-${Date.now()}`,
+        amount: 50000, // Set your fee amount
+        currency: 'NGN',
+        payment_options: 'card,banktransfer',
+        customer: {
+          email: formData.email,
+          name: formData.fullName,
+        },
+        customizations: {
+          title: 'WACCPS Fellowship Application Fee',
+          description: 'Fellowship Registration Payment',
+          logo: '/logo.jpg',
+        },
+        callback: async (response) => {
+          if (response.status === 'successful') {
+            // Optionally verify payment on backend
+            await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tx_ref: response.tx_ref, userId: user.uid }),
+            });
+            toast.success('Payment successful!');
+            // Optionally show a success screen or redirect
+          } else {
+            toast.error('Payment not completed.');
+          }
+        },
+        onclose: () => {},
+      });
+    };
+    document.body.appendChild(script);
+  };
+
   // Submit logic
   const submitForm = async (e) => {
     e.preventDefault();
@@ -288,6 +330,8 @@ export default function FellowshipRegistration() {
       });
       if (!saveRes.ok) throw new Error('Failed to save registration');
       toast.success('Fellowship application submitted successfully!');
+      // 3. Trigger Flutterwave payment
+      handleFlutterwavePayment();
     } catch (err) {
       toast.error(err.message || 'Submission failed.');
     }

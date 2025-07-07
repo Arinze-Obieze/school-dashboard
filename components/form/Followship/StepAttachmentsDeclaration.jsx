@@ -1,5 +1,5 @@
 'use client'
-import { FaPaperclip, FaFileUpload, FaSignature, FaCheckSquare } from 'react-icons/fa';
+import { FaPaperclip, FaCheck, FaUpload } from 'react-icons/fa';
 
 export default function StepAttachmentsDeclaration({ 
   formData, 
@@ -7,100 +7,69 @@ export default function StepAttachmentsDeclaration({
   handleFileChange 
 }) {
   const attachmentFields = [
-    {
-      id: 'mwccpsCertificate',
-      label: 'MWCCPS Certificate',
-      required: true,
-      icon: <FaPaperclip className="mr-2 text-blue-300" />
-    },
-    {
-      id: 'trainingCertificates',
-      label: 'Professional Training Certificates',
-      required: true,
-      icon: <FaPaperclip className="mr-2 text-blue-300" />
-    },
-    {
-      id: 'employmentLetters',
-      label: 'Employment Verification Letters',
-      required: true,
-      icon: <FaPaperclip className="mr-2 text-blue-300" />
-    },
-    {
-      id: 'publishedPapers',
-      label: 'Published Papers (Minimum 2)',
-      required: true,
-      icon: <FaPaperclip className="mr-2 text-blue-300" />
-    },
-    {
-      id: 'conferenceCertificates',
-      label: 'Conference Certificates',
-      required: true,
-      icon: <FaPaperclip className="mr-2 text-blue-300" />
-    },
-    {
-      id: 'passportPhotos',
-      label: 'Passport Photos (2 copies)',
-      required: true,
-      icon: <FaPaperclip className="mr-2 text-blue-300" />
-    },
-    {
-      id: 'feeReceipt',
-      label: 'Application Fee Receipt',
-      required: true,
-      icon: <FaPaperclip className="mr-2 text-blue-300" />
-    }
+    { id: 'mwccpsCertificate', label: 'MWCCPS Certificate' },
+    { id: 'trainingCertificates', label: 'Professional Training Certificates' },
+    { id: 'employmentLetters', label: 'Employment Verification Letters' },
+    { id: 'publishedPapers', label: 'Published Papers (Minimum 2)' },
+    { id: 'conferenceCertificates', label: 'Conference Certificates' },
+    { id: 'passportPhotos', label: 'Passport Photos (2)' },
+    { id: 'feeReceipt', label: 'Application Fee Receipt' }
   ];
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-blue-400 mb-4">SECTION G: ATTACHMENTS & DECLARATION</h2>
 
-      {/* Attachments Section */}
+      {/* Modified Attachments Section */}
       <div className="mb-8">
         <h3 className="text-md font-medium text-gray-300 mb-4 flex items-center">
-          <FaFileUpload className="mr-2 text-blue-300" />
+          <FaPaperclip className="mr-2 text-blue-300" />
           Required Documents
         </h3>
         
-        <div className="grid grid-cols-1 gap-4">
+        <div className="space-y-4">
           {attachmentFields.map((field) => (
-            <div key={field.id} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-              <label htmlFor={field.id} className="block text-sm font-medium text-gray-300 mb-2 flex items-center">
-                {field.icon}
-                {field.label}
-                {field.required && <span className="text-red-400 ml-1">*</span>}
-              </label>
-              <div className="flex items-center">
-                <input
-                  type="file"
-                  id={field.id}
-                  name={field.id}
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-gray-400
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-md file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-600 file:text-white
-                    hover:file:bg-blue-700
-                    file:cursor-pointer"
-                  required={field.required}
-                />
-                {formData[field.id] && (
-                  <span className="ml-2 text-sm text-green-400 flex items-center">
-                    <FaCheckSquare className="mr-1" />
-                    Uploaded
-                  </span>
-                )}
+            <div key={field.id} className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex-1">
+                <label htmlFor={field.id} className="block text-sm font-medium text-gray-300 mb-1">
+                  {field.label}
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    id={field.id}
+                    name={field.id}
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    required
+                  />
+                  <div className="flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg p-3 hover:border-blue-400 transition-colors">
+                    <div className="flex items-center">
+                      <FaUpload className="text-blue-400 mr-2" />
+                      <span className="text-gray-300 text-sm">
+                        {formData[field.id]?.name || 'Choose file...'}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-500">PDF, JPG, PNG</span>
+                  </div>
+                </div>
               </div>
+              {formData[field.id] && (
+                <div className="flex items-center justify-center sm:justify-start bg-green-900/30 text-green-400 rounded-lg px-4 py-3 sm:w-32">
+                  <FaCheck className="mr-1" />
+                  Uploaded
+                </div>
+              )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Declaration Section */}
+      {/* Unchanged Declaration Section */}
       <div className="bg-gray-800 p-6 rounded-lg border border-blue-500">
         <h3 className="text-md font-medium text-blue-300 mb-4 flex items-center">
-          <FaSignature className="mr-2" />
+          <FaPaperclip className="mr-2" />
           Declaration
         </h3>
         
@@ -145,6 +114,7 @@ export default function StepAttachmentsDeclaration({
         </div>
       </div>
 
+      {/* Unchanged Notes Section */}
       <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
         <h4 className="text-sm font-medium text-blue-300 mb-2">Submission Notes:</h4>
         <ul className="text-xs text-gray-400 space-y-1">
