@@ -88,7 +88,7 @@ export default function PrimaryRegistration() {
     ],
     contactEmail: "info.waccps@gmail.com",
     contactPhone: "07061543295",
-    downloadFilename: "WACCPS_PRIMARY_FORM.pdf"
+    downloadFilename: "WACCPS PRIMARY FORM.pdf"
   };
 
   useEffect(() => {
