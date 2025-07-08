@@ -1,9 +1,10 @@
 'use client'
 import ApplicationInstructions from '@/components/form/ui/ApplicationInstructions';
 import FormNavigation from '@/components/form/FormNavigation';
+import FellowshipSuccess from '../success';
 
 import { useAuth } from '@/context/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import FormInstructions from '@/components/form/ui/FormInstructions';
@@ -14,6 +15,7 @@ import StepResearchPublications from '@/components/form/Fellowship/StepResearchP
 import StepAlternativeRoute from '@/components/form/Fellowship/StepAlternativeRoute';
 import StepExamDetails from '@/components/form/Fellowship/StepExamDetails';
 import StepAttachmentsDeclaration from '@/components/form/Fellowship/StepAttachmentsDeclaration';
+import { useRouter } from 'next/navigation';
 
 export default function FellowshipRegistration() {
   const [step, setStep] = useState(0);
@@ -81,10 +83,10 @@ export default function FellowshipRegistration() {
     declarationChecked: false,
     declarationDate: '',
   });
-
-
+  const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const router = useRouter();
   const totalSteps = 7;
 
  // Instruction data for fellowship
@@ -129,6 +131,18 @@ export default function FellowshipRegistration() {
   contactPhone: "07061543295",
   downloadFilename: "WACCPS MEMBERSHIP FORM.pdf"
 };
+
+  useEffect(() => {
+    if (!user || !user.uid) return;
+    // Check if fellowship registration exists
+    fetch(`/api/get-fellowship-registration?userId=${user.uid}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.exists) {
+          setShowSuccess(true);
+        }
+      });
+  }, [user]);
 
   // Handlers for input, file, array, navigation, validation, and submit logic will be implemented here, tailored for fellowship fields and steps.
 
@@ -241,9 +255,7 @@ export default function FellowshipRegistration() {
     if (step > 0) setStep(step - 1);
   };
 
-  // Flutterwave payment handler
-  const handleFlutterwavePayment = () => {
-    // You can customize the payment details as needed
+  const handleFlutterwavePayment = (docId) => {
     const script = document.createElement('script');
     script.src = 'https://checkout.flutterwave.com/v3.js';
     script.async = true;
@@ -251,7 +263,7 @@ export default function FellowshipRegistration() {
       window.FlutterwaveCheckout({
         public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
         tx_ref: `FW-FELLOWSHIP-${user.uid}-${Date.now()}`,
-        amount: 50000, // Set your fee amount
+        amount: 50000,
         currency: 'NGN',
         payment_options: 'card,banktransfer',
         customer: {
@@ -265,14 +277,24 @@ export default function FellowshipRegistration() {
         },
         callback: async (response) => {
           if (response.status === 'successful') {
-            // Optionally verify payment on backend
             await fetch('/api/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ tx_ref: response.tx_ref, userId: user.uid }),
             });
-            toast.success('Payment successful!');
-            // Optionally show a success screen or redirect
+            // Update registration with payment info
+            await fetch('/api/save-fellowship-registration', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: user.uid,
+                docId,
+                paymentStatus: 'successful',
+                paymentRef: response.tx_ref,
+                paymentResponse: response,
+              }),
+            });
+            toast.success('Payment successful! Application updated.');
           } else {
             toast.error('Payment not completed.');
           }
@@ -282,8 +304,7 @@ export default function FellowshipRegistration() {
     };
     document.body.appendChild(script);
   };
-
-  // Submit logic
+  
   const submitForm = async (e) => {
     e.preventDefault();
     if (!isStepValid()) {
@@ -330,9 +351,10 @@ export default function FellowshipRegistration() {
         }),
       });
       if (!saveRes.ok) throw new Error('Failed to save registration');
-      toast.success('Fellowship application submitted successfully!');
-      // 3. Trigger Flutterwave payment
-      handleFlutterwavePayment();
+      const saveData = await saveRes.json();
+      toast.success('Fellowship application submitted successfully! Please complete payment.');
+      // 3. Trigger Flutterwave payment and pass docId for update after payment
+      handleFlutterwavePayment(saveData.docId);
     } catch (err) {
       toast.error(err.message || 'Submission failed.');
     }
@@ -341,118 +363,122 @@ export default function FellowshipRegistration() {
 
   return (
     <>
-      <div className="mx-auto lg:flex">
-        <div className="flex-2">
-          <FormInstructions {...fellowshipData} />
-        </div>
-        <div className="bg-gray-900 text-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-extrabold text-blue-400 sm:text-3xl">
-                WEST AFRICAN COLLEGE OF CLINICAL PHYSIOLOGY SCIENCES
-              </h1>
-              <p className="mt-3 text-xl text-blue-200">
-                Fellowship Examination Application
-              </p>
+      {showSuccess ? (
+        <FellowshipSuccess />
+      ) : (
+        <div className="mx-auto lg:flex">
+          <div className="flex-2">
+            <FormInstructions {...fellowshipData} />
+          </div>
+          <div className="bg-gray-900 text-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-3xl font-extrabold text-blue-400 sm:text-3xl">
+                  WEST AFRICAN COLLEGE OF CLINICAL PHYSIOLOGY SCIENCES
+                </h1>
+                <p className="mt-3 text-xl text-blue-200">
+                  Fellowship Examination Application
+                </p>
+              </div>
+              {!showForm ? (
+                <ApplicationInstructions formName={'Fellowship'} onBegin={() => setShowForm(true)} />
+              ) : (
+                <form onSubmit={submitForm} className="bg-gray-800 rounded-lg shadow-xl p-6 border border-blue-500">
+                  {/* Progress Bar */}
+                  <div className="mb-8">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium text-blue-300">Step {step + 1} of {totalSteps}</span>
+                      <span className="text-sm font-medium text-blue-300">
+                        {Math.round(((step + 1) / totalSteps) * 100)}% Complete
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2.5">
+                      <div
+                        className="bg-blue-600 h-2.5 rounded-full"
+                        style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Step 1: Personal Details */}
+                  {step === 0 && (
+                    <StepPersonalDetails 
+                      formData={formData} 
+                      handleChange={handleChange} 
+                    />
+                  )}
+                  {step === 1 && (
+                    <StepHigherQualifications 
+                      formData={formData} 
+                      handleChange={handleChange} 
+                      handleArrayChange={handleArrayChange} 
+                      addArrayItem={addArrayItem} 
+                      removeArrayItem={removeArrayItem} 
+                    />
+                  )}
+                  {step === 2 && (
+                    <StepProfessionalExperience 
+                      formData={formData} 
+                      handleChange={handleChange} 
+                      handleArrayChange={handleArrayChange} 
+                      addArrayItem={addArrayItem} 
+                      removeArrayItem={removeArrayItem} 
+                    />
+                  )}
+                  {step === 3 && (
+                    <StepResearchPublications 
+                      formData={formData} 
+                      handleChange={handleChange} 
+                      handleArrayChange={handleArrayChange} 
+                      addArrayItem={addArrayItem} 
+                      removeArrayItem={removeArrayItem} 
+                    />
+                  )}
+                  {step === 4 && (
+                    <StepAlternativeRoute 
+                      formData={formData} 
+                      handleChange={handleChange} 
+                      handleArrayChange={handleArrayChange} 
+                      addArrayItem={addArrayItem} 
+                      removeArrayItem={removeArrayItem} 
+                    />
+                  )}
+                  {step === 5 && (
+                    <StepExamDetails 
+                      formData={formData} 
+                      handleChange={handleChange} 
+                    />
+                  )}
+                  {step === 6 && (
+                    <StepAttachmentsDeclaration 
+                      formData={formData} 
+                      handleChange={handleChange} 
+                      handleFileChange={handleFileChange} 
+                    />
+                  )}
+
+                  <FormNavigation 
+                    step={step}
+                    totalSteps={totalSteps}
+                    prevStep={prevStep}
+                    nextStep={nextStep}
+                    isStepValid={isStepValid}
+                  />
+                  {step === totalSteps - 1 && (
+                    <button
+                      type="submit"
+                      className={`w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={loading}
+                    >
+                      {loading ? 'Submitting...' : 'Submit Fellowship Application'}
+                    </button>
+                  )}
+                </form>
+              )}
             </div>
-            {!showForm ? (
-              <ApplicationInstructions formName={'Fellowship'} onBegin={() => setShowForm(true)} />
-            ) : (
-              <form onSubmit={submitForm} className="bg-gray-800 rounded-lg shadow-xl p-6 border border-blue-500">
-                {/* Progress Bar */}
-                <div className="mb-8">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-blue-300">Step {step + 1} of {totalSteps}</span>
-                    <span className="text-sm font-medium text-blue-300">
-                      {Math.round(((step + 1) / totalSteps) * 100)}% Complete
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5">
-                    <div
-                      className="bg-blue-600 h-2.5 rounded-full"
-                      style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Step 1: Personal Details */}
-                {step === 0 && (
-                  <StepPersonalDetails 
-                    formData={formData} 
-                    handleChange={handleChange} 
-                  />
-                )}
-                {step === 1 && (
-                  <StepHigherQualifications 
-                    formData={formData} 
-                    handleChange={handleChange} 
-                    handleArrayChange={handleArrayChange} 
-                    addArrayItem={addArrayItem} 
-                    removeArrayItem={removeArrayItem} 
-                  />
-                )}
-                {step === 2 && (
-                  <StepProfessionalExperience 
-                    formData={formData} 
-                    handleChange={handleChange} 
-                    handleArrayChange={handleArrayChange} 
-                    addArrayItem={addArrayItem} 
-                    removeArrayItem={removeArrayItem} 
-                  />
-                )}
-                {step === 3 && (
-                  <StepResearchPublications 
-                    formData={formData} 
-                    handleChange={handleChange} 
-                    handleArrayChange={handleArrayChange} 
-                    addArrayItem={addArrayItem} 
-                    removeArrayItem={removeArrayItem} 
-                  />
-                )}
-                {step === 4 && (
-                  <StepAlternativeRoute 
-                    formData={formData} 
-                    handleChange={handleChange} 
-                    handleArrayChange={handleArrayChange} 
-                    addArrayItem={addArrayItem} 
-                    removeArrayItem={removeArrayItem} 
-                  />
-                )}
-                {step === 5 && (
-                  <StepExamDetails 
-                    formData={formData} 
-                    handleChange={handleChange} 
-                  />
-                )}
-                {step === 6 && (
-                  <StepAttachmentsDeclaration 
-                    formData={formData} 
-                    handleChange={handleChange} 
-                    handleFileChange={handleFileChange} 
-                  />
-                )}
-
-                <FormNavigation 
-                  step={step}
-                  totalSteps={totalSteps}
-                  prevStep={prevStep}
-                  nextStep={nextStep}
-                  isStepValid={isStepValid}
-                />
-                {step === totalSteps - 1 && (
-                  <button
-                    type="submit"
-                    className={`w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={loading}
-                  >
-                    {loading ? 'Submitting...' : 'Submit Fellowship Application'}
-                  </button>
-                )}
-              </form>
-            )}
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
