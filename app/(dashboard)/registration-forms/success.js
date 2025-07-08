@@ -26,7 +26,7 @@ const GROUPS = [
   // },
 ];
 
-export default function MembershipSuccess() {
+export default function Success() {
 
  
 

@@ -1,7 +1,6 @@
 'use client'
 import ApplicationInstructions from '@/components/form/ui/ApplicationInstructions';
 import FormNavigation from '@/components/form/FormNavigation';
-import FellowshipSuccess from '../success';
 
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
@@ -16,6 +15,7 @@ import StepAlternativeRoute from '@/components/form/Fellowship/StepAlternativeRo
 import StepExamDetails from '@/components/form/Fellowship/StepExamDetails';
 import StepAttachmentsDeclaration from '@/components/form/Fellowship/StepAttachmentsDeclaration';
 import { useRouter } from 'next/navigation';
+import Success from '../success';
 
 export default function FellowshipRegistration() {
   const [step, setStep] = useState(0);
@@ -361,7 +361,7 @@ export default function FellowshipRegistration() {
   return (
     <>
       {showSuccess ? (
-        <FellowshipSuccess />
+        <Success />
       ) : (
         <div className="mx-auto lg:flex">
           <div className="flex-2">

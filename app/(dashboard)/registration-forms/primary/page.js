@@ -144,9 +144,7 @@ export default function PrimaryRegistration() {
       () => formData.practiceAbroad !== '',
       
       // Step 4: Attachments & Declaration
-      () => formData.degreeCertificate && formData.trainingCertificate && 
-            formData.passportPhotos && formData.feeReceipt && 
-            formData.declarationChecked
+      () =>  formData.declarationChecked
     ];
     
     return validations[step] ? validations[step]() : true;
@@ -236,16 +234,21 @@ export default function PrimaryRegistration() {
       toast.error('You must be logged in to submit the form.');
       return;
     }
-
+  
     setLoading(true);
     try {
-      // 1. Upload files
-      const uploadData = await uploadFiles();
-      
-      // 2. Save form data
-      const saveData = await saveRegistration(uploadData.urls);
-      
-      // 3. Initiate payment
+      // Save form data (no files)
+      const res = await fetch('/api/save-primary-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          ...formData,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to save registration');
+      const saveData = await res.json();
+      // Initiate payment
       toast.success('Application submitted! Please complete payment.');
       handlePayment(saveData.docId);
     } catch (error) {
