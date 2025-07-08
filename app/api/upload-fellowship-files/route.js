@@ -12,11 +12,13 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
     const fileFields = [
-      'degreeCertificates',
-      'trainingCertificate',
-      'workExperienceProof',
-      'cpdCertificates',
-      'passportPhoto',
+      'mwccpsCertificate',
+      'trainingCertificates',
+      'employmentLetters',
+      'publishedPapers',
+      'conferenceCertificates',
+      'passportPhotos',
+      'feeReceipt',
     ];
     const s3 = getR2Client();
     const uploadedUrls = {};
