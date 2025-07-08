@@ -23,7 +23,7 @@ export default function ApplicationInstructions({ onBegin, formName }) {
       <button
         onClick={() => checked && onBegin()}
         disabled={!checked}
-        className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center ${!checked ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`w-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center ${!checked ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         Begin {formName} Registration
         <svg className="ml-2 -mr-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">

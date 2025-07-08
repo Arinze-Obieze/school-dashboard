@@ -356,7 +356,7 @@ export default function FellowshipRegistration() {
               </p>
             </div>
             {!showForm ? (
-              <ApplicationInstructions formName={'Followship'} onBegin={() => setShowForm(true)} />
+              <ApplicationInstructions formName={'Fellowship'} onBegin={() => setShowForm(true)} />
             ) : (
               <form onSubmit={submitForm} className="bg-gray-800 rounded-lg shadow-xl p-6 border border-blue-500">
                 {/* Progress Bar */}
