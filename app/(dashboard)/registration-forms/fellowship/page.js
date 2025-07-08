@@ -79,7 +79,6 @@ export default function FellowshipRegistration() {
     publishedPapers: null,
     conferenceCertificates: null,
     passportPhotos: null,
-    feeReceipt: null,
     declarationChecked: false,
     declarationDate: '',
   });
@@ -120,7 +119,6 @@ export default function FellowshipRegistration() {
     "Published Papers (Minimum 2)",
     "Conference Certificates",
     "Passport Photos (2)",
-    "Application Fee Receipt",
     "All payments are non-refundable"
   ],
   notes: [
@@ -237,7 +235,7 @@ export default function FellowshipRegistration() {
     if (step === 6) {
       // Attachments & Declaration
       return (
-        formData.mwccpsCertificate && formData.trainingCertificates && formData.employmentLetters && formData.publishedPapers && formData.conferenceCertificates && formData.passportPhotos && formData.feeReceipt && formData.declarationChecked && formData.declarationDate
+        formData.mwccpsCertificate && formData.trainingCertificates && formData.employmentLetters && formData.publishedPapers && formData.conferenceCertificates && formData.passportPhotos && formData.declarationChecked && formData.declarationDate
       );
     }
     return true;
@@ -326,7 +324,6 @@ export default function FellowshipRegistration() {
         'publishedPapers',
         'conferenceCertificates',
         'passportPhotos',
-        'feeReceipt',
       ];
       fileFields.forEach((field) => {
         if (formData[field]) {

@@ -18,7 +18,6 @@ export async function POST(req) {
       'publishedPapers',
       'conferenceCertificates',
       'passportPhotos',
-      'feeReceipt',
     ];
     const s3 = getR2Client();
     const uploadedUrls = {};
