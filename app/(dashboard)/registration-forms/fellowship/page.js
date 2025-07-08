@@ -127,7 +127,7 @@ export default function FellowshipRegistration() {
   ],
   contactEmail: "info.waccps@gmail.com",
   contactPhone: "07061543295",
-  downloadFilename: "WACCPS MEMBERSHIP FORM.pdf"
+  downloadFilename: "WACCPS Fellowship form.pdf"
 };
 
   useEffect(() => {
