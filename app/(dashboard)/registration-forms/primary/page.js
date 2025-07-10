@@ -8,13 +8,14 @@ import 'react-toastify/dist/ReactToastify.css';
 // Components
 import ApplicationInstructions from '@/components/form/ui/ApplicationInstructions';
 import FormNavigation from '@/components/form/FormNavigation';
-import PrimarySuccess from '../success';
+import Success from '../success';
 import FormInstructions from '@/components/form/ui/FormInstructions';
 import StepPersonalDetails from '@/components/form/Primary/StepPersonalDetails';
 import StepDemographicInfo from '@/components/form/Primary/StepDemographicInfo';
 import StepInstitutionDetails from '@/components/form/Primary/StepInstitutionDetails';
 import StepCareerIntentions from '@/components/form/Primary/StepCareerIntentions';
 import StepAttachmentsDeclaration from '@/components/form/Primary/StepAttachmentsDeclaration';
+import PaymentAmountModal from '@/components/PaymentAmountModal';
 
 export default function PrimaryRegistration() {
   const [step, setStep] = useState(0);
@@ -55,19 +56,23 @@ export default function PrimaryRegistration() {
   
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAmountModal, setShowAmountModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(null);
   const { user } = useAuth();
   const router = useRouter();
   const totalSteps = 5;
 
   const primaryExamData = {
     title: "Primary Examination Requirements (WACCPS)",
-    description: "The West African College of Clinical Physiology Sciences (WACCPS) Primary Examination assesses foundational knowledge in clinical physiology sciences.",
+    description: `The primary examination is the first step in the WACCPS's examination process. It assesses
+candidates' foundational knowledge in clinical physiology sciences.`,
     borderColor: "blue-500",
     buttonColor: "blue-600",
-    textColor: "blue-300",
+    textColor: "blue-300",    textColor: "blue-300",
+
     eligibility: [
       "Relevant Degree: Candidates must hold a degree in a related field.",
-      "Certified Training: Completion of a WACCPS-approved training program."
+      "Certified Training: Completion of a certified training program."
     ],
     examinationFormat: [
       "Multiple-Choice Questions (MCQs)",
@@ -234,26 +239,67 @@ export default function PrimaryRegistration() {
       toast.error('You must be logged in to submit the form.');
       return;
     }
-  
+    setShowAmountModal(true);
+  };
+
+  const handleAmountSubmit = (amount) => {
+    setShowAmountModal(false);
+    setPaymentAmount(amount);
+    proceedWithPayment(amount);
+  };
+
+  const proceedWithPayment = async (amount) => {
     setLoading(true);
     try {
-      // Save form data (no files)
-      const res = await fetch('/api/save-primary-registration', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.uid,
-          ...formData,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to save registration');
-      const saveData = await res.json();
-      // Initiate payment
-      toast.success('Application submitted! Please complete payment.');
-      handlePayment(saveData.docId);
+      const script = document.createElement('script');
+      script.src = 'https://checkout.flutterwave.com/v3.js';
+      script.async = true;
+      script.onload = () => {
+        window.FlutterwaveCheckout({
+          public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
+          tx_ref: `PRIMARY-${user.uid}-${Date.now()}`,
+          amount: amount,
+          currency: 'NGN',
+          payment_options: 'card,banktransfer',
+          customer: {
+            email: formData.email,
+            name: `${formData.surname} ${formData.firstName}`,
+          },
+          customizations: {
+            title: 'WACCPS Primary Examination Fee',
+            description: 'Primary Registration Payment',
+            logo: '/logo.jpg',
+          },
+          callback: async (response) => {
+            if (response.status === 'successful') {
+              try {
+                const res = await fetch('/api/save-primary-registration', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userId: user.uid,
+                    ...formData,
+                    paymentStatus: 'successful',
+                    paymentRef: response.tx_ref,
+                    paymentAmount: amount,
+                  }),
+                });
+                if (!res.ok) throw new Error('Failed to save registration');
+                toast.success('Payment and registration successful!');
+                setShowSuccess(true);
+              } catch (err) {
+                toast.error('Payment succeeded but registration failed. Please contact support.');
+              }
+            } else {
+              toast.error('Payment not completed.');
+            }
+            setLoading(false);
+          },
+        });
+      };
+      document.body.appendChild(script);
     } catch (error) {
       toast.error(error.message || 'Submission failed.');
-    } finally {
       setLoading(false);
     }
   };
@@ -298,8 +344,13 @@ export default function PrimaryRegistration() {
 
   return (
     <>
+      <PaymentAmountModal
+        isOpen={showAmountModal}
+        onClose={() => setShowAmountModal(false)}
+        onSubmit={handleAmountSubmit}
+      />
       {showSuccess ? (
-        <PrimarySuccess />
+        <Success />
       ) : (
         <div className="mx-auto lg:flex min-h-screen">
           <div className="lg:w-1/3 bg-gray-800 p-6">
@@ -404,7 +455,7 @@ export default function PrimaryRegistration() {
                           </svg>
                           Processing...
                         </>
-                      ) : 'Submit Primary Application'}
+                      ) : 'Submit Primary Application & Pay'}
                     </button>
                   )}
                 </form>

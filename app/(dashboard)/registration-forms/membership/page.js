@@ -14,6 +14,7 @@ import {  toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useRouter } from 'next/navigation';
 import MembershipSuccess from '../success';
+import PaymentAmountModal from '@/components/PaymentAmountModal';
 
 
 
@@ -73,6 +74,9 @@ export default function MembershipRegistration() {
   const [declarationChecked, setDeclarationChecked] = useState(false);
   const [declarationDate, setDeclarationDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showAmountModal, setShowAmountModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
 
@@ -219,53 +223,52 @@ export default function MembershipRegistration() {
     if (step > 0) setStep(step - 1);
   };
 
-  // Payment handler for Flutterwave
-  const handleFlutterwavePayment = (userId, email, fullName, phoneNumber) => {
-    // Load Flutterwave inline script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.flutterwave.com/v3.js';
-    script.async = true;
-    script.onload = () => {
-      window.FlutterwaveCheckout({
-        public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-        tx_ref: `${userId}-membership-${Date.now()}`,
-        amount: 220000,
-        currency: 'NGN',
-        payment_options: 'banktransfer,card',
-        customer: {
-          email: email,
-          name: fullName,
-          phonenumber: phoneNumber,
-        },
-        customizations: {
-          title: 'Membership Registration Fee',
-          description: 'Membership registration payment for WACCPS',
-          logo: '/logo-50x100.jpg',
-        },
-        callback: async function(response) {
-          setLoading(true);
-          try {
-            const res = await fetch('/api/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tx_ref: response.transaction_id, userId }),
-            });
-            const data = await res.json();
-            if (data.status === 'success') {
-              toast.success('Payment completed successfully!');
-              // Optionally redirect or update UI
+  // Payment handler using modal
+  const handleAmountSubmit = (amount) => {
+    setShowAmountModal(false);
+    setPaymentAmount(amount);
+    proceedWithPayment(amount);
+  };
+
+  // Payment logic using entered amount
+  const proceedWithPayment = async (amount) => {
+    setLoading(true);
+    try {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.flutterwave.com/v3.js';
+      script.async = true;
+      script.onload = () => {
+        window.FlutterwaveCheckout({
+          public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
+          tx_ref: `MEMBERSHIP-${user.uid}-${Date.now()}`,
+          amount: amount,
+          currency: 'NGN',
+          payment_options: 'card,banktransfer',
+          customer: {
+            email: formData.email,
+            name: formData.fullName,
+          },
+          customizations: {
+            title: 'WACCPS Membership Registration Fee',
+            description: 'Membership Registration Payment',
+            logo: '/logo.jpg',
+          },
+          callback: async (response) => {
+            if (response.status === 'successful') {
+              setPaymentSuccess(true);
+              toast.success('Payment successful! Now complete your application.');
             } else {
               toast.error('Payment not completed.');
             }
-          } catch (e) {
-            toast.error('Payment verification failed.');
-          }
-          setLoading(false);
-        },
-        onclose: function() {},
-      });
-    };
-    document.body.appendChild(script);
+            setLoading(false);
+          },
+        });
+      };
+      document.body.appendChild(script);
+    } catch (error) {
+      toast.error(error.message || 'Payment failed.');
+      setLoading(false);
+    }
   };
 
   const submitForm = async (e) => {
@@ -276,6 +279,10 @@ export default function MembershipRegistration() {
     }
     if (!user || !user.uid) {
       toast.error('You must be logged in to submit the form.');
+      return;
+    }
+    if (!paymentSuccess) {
+      setShowAmountModal(true);
       return;
     }
     setLoading(true);
@@ -309,19 +316,13 @@ export default function MembershipRegistration() {
           userId: user.uid, // Use Firebase Auth userId
           ...formData,
           fileUrls: uploadData.urls,
+          paymentAmount: paymentAmount,
         }),
       });
       if (!saveRes.ok) throw new Error('Failed to save registration');
       const saveData = await saveRes.json();
       toast.success('Application submitted successfully!');
-      // 3. Initiate payment
-      handleFlutterwavePayment(
-        user.uid,
-        formData.email,
-        formData.fullName,
-        formData.phoneNumber
-      );
-      setShowSuccess(true); // Show success page after payment
+      setShowSuccess(true); // Show success page
     } catch (err) {
       toast.error(err.message || 'Submission failed.');
     }
@@ -334,6 +335,11 @@ export default function MembershipRegistration() {
 
   return (
     <>
+      <PaymentAmountModal
+        isOpen={showAmountModal}
+        onClose={() => setShowAmountModal(false)}
+        onSubmit={handleAmountSubmit}
+      />
       {showSuccess ? (
         <MembershipSuccess />
       ) : (

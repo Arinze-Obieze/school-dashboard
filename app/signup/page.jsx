@@ -9,6 +9,10 @@ const countries = [
   'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Other'
 ];
 
+// Email validation function
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+
 async function uploadToR2(file, userId) {
   if (!file) return '';
   const formData = new FormData();
@@ -40,7 +44,19 @@ export default function SignupPage() {
   const handleChange = e => {
     const { name, value, files } = e.target;
     setForm(f => ({ ...f, [name]: files ? files[0] : value }));
+  
+  
+  // New email validation 
+  if (name === 'email' && value && !isValidEmail(value)) {
+    setError('Please enter a valid email address');
+  } else if (name === 'email' && !value) {
+    setError('Email is required');
+  } else if (error && name === 'email' && isValidEmail(value)) {
+    setError(''); // Clear error when email becomes valid
+  }
   };
+
+
 
   // Check if user has incomplete registration (e.g., payment not done) 
   useEffect(() => {
@@ -62,7 +78,7 @@ export default function SignupPage() {
     checkPayment();
   }, [userId]);
 
-  // Step 1: Register user (no photo)
+  // Step 1: Register user 
   const handleInfoSubmit = async (e) => {
     e.preventDefault();
     setError('');
