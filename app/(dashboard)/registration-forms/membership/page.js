@@ -113,7 +113,7 @@ export default function MembershipRegistration() {
   ],
   contactEmail: "info.waccps@gmail.com",
   contactPhone: "07061543295",
-  downloadFilename: "WACCPS-Membership-Form.pdf"
+  downloadFilename: "WACCPS MEMBERSHIP FORM.pdf"
 };
 
 

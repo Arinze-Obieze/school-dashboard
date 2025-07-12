@@ -9,7 +9,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
        <head>
         <title>WACCPS | Student Dashboard</title>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/faviconi.ico" />
       </head>
       <body className="bg-[#454c56] flex flex-col lg:flex-row min-h-screen">
         <AuthProvider>

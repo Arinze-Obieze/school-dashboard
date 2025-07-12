@@ -13,7 +13,6 @@ export default function StepAttachmentsDeclaration({
     { id: 'publishedPapers', label: 'Published Papers (Minimum 2)' },
     { id: 'conferenceCertificates', label: 'Conference Certificates' },
     { id: 'passportPhotos', label: 'Passport Photos (2)' },
-    { id: 'feeReceipt', label: 'Application Fee Receipt' }
   ];
 
   return (

@@ -12,7 +12,7 @@ function Header({ toggleSidebar, setToggleSidebar }) {
   return (
     <div className='flex justify-between items-center p-4 text-gray-300 shadow-md bg-[#343940]'>
       <div className='flex items-center gap-4'>
-      <IoIosMenu className='text-2xl cursor-pointer' onClick={handleToggleSidebar} />
+      <IoIosMenu className='text-2xl cursor-pointer lg:hidden' onClick={handleToggleSidebar} />
         <Link href="/" className='text-sm cursor-pointer'>Home</Link>
 
         <Link href="/contact" className='text-sm cursor-pointer'>Contact</Link>

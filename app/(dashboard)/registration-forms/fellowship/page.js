@@ -1,6 +1,7 @@
 'use client'
 import ApplicationInstructions from '@/components/form/ui/ApplicationInstructions';
 import FormNavigation from '@/components/form/FormNavigation';
+import PaymentAmountModal from '@/components/PaymentAmountModal';
 
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
@@ -84,6 +85,9 @@ export default function FellowshipRegistration() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAmountModal, setShowAmountModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
   const totalSteps = 7;
@@ -253,56 +257,55 @@ export default function FellowshipRegistration() {
     if (step > 0) setStep(step - 1);
   };
 
-  const handleFlutterwavePayment = (docId) => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.flutterwave.com/v3.js';
-    script.async = true;
-    script.onload = () => {
-      window.FlutterwaveCheckout({
-        public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-        tx_ref: `FW-FELLOWSHIP-${user.uid}-${Date.now()}`,
-        amount: 50000,
-        currency: 'NGN',
-        payment_options: 'card,banktransfer',
-        customer: {
-          email: formData.email,
-          name: formData.fullName,
-        },
-        customizations: {
-          title: 'WACCPS Fellowship Application Fee',
-          description: 'Fellowship Registration Payment',
-          logo: '/logo.jpg',
-        },
-        callback: async (response) => {
-          if (response.status === 'successful') {
-            await fetch('/api/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tx_ref: response.tx_ref, userId: user.uid }),
-            });
-            // Update registration with payment info
-            await fetch('/api/save-fellowship-registration', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userId: user.uid,
-                docId,
-                paymentStatus: 'successful',
-                paymentRef: response.tx_ref,
-                paymentResponse: response,
-              }),
-            });
-            toast.success('Payment successful! Application updated.');
-          } else {
-            toast.error('Payment not completed.');
-          }
-        },
-        onclose: () => {},
-      });
-    };
-    document.body.appendChild(script);
+  // Payment handler using modal
+  const handleAmountSubmit = (amount) => {
+    setShowAmountModal(false);
+    setPaymentAmount(amount);
+    proceedWithPayment(amount);
   };
-  
+
+  // Payment logic using entered amount
+  const proceedWithPayment = async (amount) => {
+    setLoading(true);
+    try {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.flutterwave.com/v3.js';
+      script.async = true;
+      script.onload = () => {
+        window.FlutterwaveCheckout({
+          public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
+          tx_ref: `FELLOWSHIP-${user.uid}-${Date.now()}`,
+          amount: amount,
+          currency: 'NGN',
+          payment_options: 'card,banktransfer',
+          customer: {
+            email: formData.email,
+            name: formData.fullName,
+          },
+          customizations: {
+            title: 'WACCPS Fellowship Registration Fee',
+            description: 'Fellowship Registration Payment',
+            logo: '/logo.jpg',
+          },
+          callback: async (response) => {
+            if (response.status === 'successful') {
+              setPaymentSuccess(true);
+              toast.success('Payment successful! Now complete your application.');
+            } else {
+              toast.error('Payment not completed.');
+            }
+            setLoading(false);
+          },
+        });
+      };
+      document.body.appendChild(script);
+    } catch (error) {
+      toast.error(error.message || 'Payment failed.');
+      setLoading(false);
+    }
+  };
+
+  // Modified submitForm: require payment before submission
   const submitForm = async (e) => {
     e.preventDefault();
     if (!isStepValid()) {
@@ -311,6 +314,10 @@ export default function FellowshipRegistration() {
     }
     if (!user || !user.uid) {
       toast.error('You must be logged in to submit the form.');
+      return;
+    }
+    if (!paymentSuccess) {
+      setShowAmountModal(true);
       return;
     }
     setLoading(true);
@@ -345,13 +352,13 @@ export default function FellowshipRegistration() {
           userId: user.uid,
           ...formData,
           fileUrls: uploadData.urls,
+          paymentAmount: paymentAmount,
         }),
       });
       if (!saveRes.ok) throw new Error('Failed to save registration');
       const saveData = await saveRes.json();
-      toast.success('Fellowship application submitted successfully! Please complete payment.');
-      // 3. Trigger Flutterwave payment and pass docId for update after payment
-      handleFlutterwavePayment(saveData.docId);
+      toast.success('Fellowship application submitted successfully!');
+      setShowSuccess(true);
     } catch (err) {
       toast.error(err.message || 'Submission failed.');
     }
@@ -360,10 +367,15 @@ export default function FellowshipRegistration() {
 
   return (
     <>
+      <PaymentAmountModal
+        isOpen={showAmountModal}
+        onClose={() => setShowAmountModal(false)}
+        onSubmit={handleAmountSubmit}
+      />
       {showSuccess ? (
         <Success />
       ) : (
-        <div className="mx-auto lg:flex">
+        <div className="mx-auto lg:flex min-h-screen">
           <div className="flex-2">
             <FormInstructions {...fellowshipData} />
           </div>
@@ -380,7 +392,7 @@ export default function FellowshipRegistration() {
               {!showForm ? (
                 <ApplicationInstructions formName={'Fellowship'} onBegin={() => setShowForm(true)} />
               ) : (
-                <form onSubmit={submitForm} className="bg-gray-800 rounded-lg shadow-xl p-6 border border-blue-500">
+                <form onSubmit={submitForm} className="bg-gray-800 rounded-xl shadow-2xl p-8 border border-purple-500/30">
                   {/* Progress Bar */}
                   <div className="mb-8">
                     <div className="flex justify-between mb-2">
