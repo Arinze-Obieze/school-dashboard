@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { auth, db } from '../../firebase';
+import { auth, db } from '../../../firebase';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
 
 const countries = [
