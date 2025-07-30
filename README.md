@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# WACCPS School Dashboard
+
+A modern student dashboard for the West African College of Clinical Physiology Sciences (WACCPS), built with Next.js, Firebase, and Flutterwave. This platform enables students to manage registrations, payments, courses, exams, resources, and more—all in one place.
+
+## Features
+- **Student Registration:** Multi-step forms for Primary, Membership, and Fellowship applications, with document uploads and payment integration.
+- **Secure Authentication:** Firebase Auth for user login, signup, and protected routes.
+- **Online Payments:** Integrated Flutterwave payments. Successful transactions are automatically recorded in Firestore for audit and history.
+- **Course Management:** Register, drop, and view courses; access course materials and assignments.
+- **Exams & Results:** Take online exams, view timetables, submit scripts, and track GPA/CGPA.
+- **Academic Records:** Download admission letters, view registration history, and check graduation eligibility.
+- **Resources:** Access eLibrary, lecture notes, videos, and study groups.
+- **Payment History:** View fee breakdowns, payment history, receipts, and invoices. 
+- **Profile Management:** Update personal details and upload profile photos.
+- **Admin Tools:** Superadmin role management and payment oversight.
+
+## Tech Stack
+- **Next.js 14+** (App Router, Server Components)
+- **Firebase** (Auth, Firestore, Storage)
+- **Flutterwave** (Payment Gateway)
+- **Cloudflare R2** (File Storage)
+- **React & Tailwind CSS** (UI/UX)
 
 ## Getting Started
+1. **Install dependencies:**
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+2. **Configure environment variables:**
+   - Copy `.env.example` to `.env.local` and fill in your Firebase, Flutterwave, and R2 credentials.
+3. **Run the development server:**
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-First, run the development server:
+## Project Structure
+- `app/` — Next.js app directory (pages, layouts, API routes)
+- `components/` — Reusable React components (forms, modals, navigation)
+- `context/` — Global context providers (Auth)
+- `lib/` — Utility libraries (payment recording, R2 client)
+- `public/` — Static assets (images, PDFs)
+- `firebase.js` — Firebase client config
+- `firebaseAdmin.js` — Firebase Admin SDK config
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Payment Recording
+All successful student payments are automatically recorded in Firestore under:
 ```
+payments/{userId}/transactions/{paymentRef}
+```
+Each payment document includes:
+- `userId`: Student ID
+- `amount`: Amount paid
+- `status`: Payment status ("success")
+- `method`: Payment method (e.g., "flutterwave")
+- `reference`: Payment reference/transaction ID
+- `courseId`: (optional)
+- `timestamp`: Server timestamp
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Security & Access
+- Students can view only their own payment records.
+- Superadmins can view and manage all payments.
+- All routes are protected using the `ProtectedRoute` component.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Contributing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contact
+For support or inquiries, email: 
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+**Powered by WACCPS**
