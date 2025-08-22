@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../../../firebase';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
@@ -93,8 +93,10 @@ export default function SignupPage() {
     }
     try {
       const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      await sendEmailVerification(userCred.user); // Send verification email
       setUserId(userCred.user.uid);
       setStep(2);
+      setError('A verification email has been sent. Please verify your email before logging in.');
     } catch (err) {
       setError(err.message);
     }
