@@ -211,6 +211,11 @@ export default function SignupPage() {
     document.body.appendChild(script);
   };
 
+  // Calculate max date for DOB (12 years ago from today)
+  const today = new Date();
+  const maxDob = new Date(today.getFullYear() - 12, today.getMonth(), today.getDate())
+    .toISOString().split('T')[0];
+
   return (
     <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center bg-[#23272f]">
       {/* Side panel for large screens */}
@@ -250,7 +255,11 @@ export default function SignupPage() {
                 <option value="">Select Nationality (optional)</option>
                 {countries.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input name="dob" type="date" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.dob} onChange={handleChange} />
+            <div className='flex flex-col gap-1'>
+            <label className="text-white">Date of Birth*</label>
+            <input name="dob" type="date" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.dob} onChange={handleChange} max={maxDob} />
+            </div>
+
             </div>
           )}
           {step === 2 && (
