@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, reload } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../../../firebase';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
@@ -39,6 +39,8 @@ export default function SignupPage() {
   const [userId, setUserId] = useState('');
   const [photoURL, setPhotoURL] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('pending'); // 'pending' | 'success'
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [verificationCheckLoading, setVerificationCheckLoading] = useState(false);
   const router = useRouter();
 
   const handleChange = e => {
@@ -77,6 +79,30 @@ export default function SignupPage() {
     };
     checkPayment();
   }, [userId]);
+
+  // Check email verification status
+  useEffect(() => {
+    if (step === 2 && auth.currentUser) {
+      setVerificationCheckLoading(true);
+      reload(auth.currentUser).then(() => {
+        setEmailVerified(auth.currentUser.emailVerified);
+        setVerificationCheckLoading(false);
+      });
+    }
+  }, [step]);
+
+  // Resend verification email
+  const handleResendVerification = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setError('Verification email resent. Please check your inbox.');
+    } catch (err) {
+      setError('Failed to resend verification email.');
+    }
+    setLoading(false);
+  };
 
   // Step 1: Register user 
   const handleInfoSubmit = async (e) => {
@@ -233,7 +259,7 @@ export default function SignupPage() {
         <div className="flex justify-center mb-6 lg:hidden">
           <img src="/logo-50x100.jpg" alt="Logo" width={300} height={120} />
         </div>
-        <form onSubmit={step === 1 ? handleInfoSubmit : step === 2 ? handlePhotoSubmit : (e) => { e.preventDefault(); handleFlutterwavePayment(); }} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md" encType="multipart/form-data">
+        <form onSubmit={step === 1 ? handleInfoSubmit : step === 2 ? (e) => e.preventDefault() : (e) => { e.preventDefault(); handleFlutterwavePayment(); }} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md" encType="multipart/form-data">
           <h2 className="text-2xl mb-6 text-white text-center">Application Form</h2>
           {error && <div className="mb-4 text-red-500">{error}</div>}
           {step === 1 && (
@@ -262,7 +288,17 @@ export default function SignupPage() {
 
             </div>
           )}
-          {step === 2 && (
+          {step === 2 && !emailVerified && (
+            <div className="flex flex-col gap-4 items-center">
+              <h3 className="text-xl text-white font-bold mb-2">Verify Your Email</h3>
+              <p className="text-gray-300 text-center mb-2">A verification email has been sent to <span className="font-bold">{form.email}</span>. Please verify your email address to continue registration.</p>
+              <button type="button" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" onClick={handleResendVerification} disabled={loading}>Resend Verification Email</button>
+              <button type="button" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" onClick={async () => { setVerificationCheckLoading(true); await reload(auth.currentUser); setEmailVerified(auth.currentUser.emailVerified); setVerificationCheckLoading(false); if (!auth.currentUser.emailVerified) setError('Email not verified yet, please check your inbox or spam folder'); else setError(''); }} disabled={verificationCheckLoading}>I've Verified My Email</button>
+              <p className="text-gray-400 text-xs mt-2">After verifying, click "I've Verified My Email" to continue.</p>
+              {error && <div className="text-red-500 mt-2">{error}</div>}
+            </div>
+          )}
+          {step === 2 && emailVerified && (
             <div className="flex flex-col gap-4">
               <label className="text-white">Upload Passport Photo*</label>
               <input name="photo" type="file" accept="image/*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" onChange={handleChange} required />
@@ -280,7 +316,12 @@ export default function SignupPage() {
               <p className="text-gray-400 text-xs mt-2">You will be redirected to Flutterwave to complete your payment securely.</p>
             </div>
           )}
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6" disabled={loading}>{loading ? (step === 1 ? 'Registering...' : 'Uploading...') : (step === 1 ? 'Next: Upload Photo' : 'Pay ₦21,000 Now To Finish Registration')}</button>
+          {/* Only show submit button for step 1, photo upload (after email verified), and payment step */}
+          {(step === 1 || (step === 2 && emailVerified) || step === 3) && (
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6" disabled={loading}>
+              {loading ? (step === 1 ? 'Registering...' : step === 2 ? 'Uploading...' : 'Processing Payment...') : (step === 1 ? 'Next: Upload Photo' : step === 2 ? 'Next: Payment' : 'Pay ₦21,000 Now To Finish Registration')}
+            </button>
+          )}
           <p className="mt-4 text-gray-400 text-sm text-center">
             Already have an account? <a href="/login" className="text-blue-400 hover:underline">Login</a>
           </p>
