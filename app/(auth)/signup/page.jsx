@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword, sendEmailVerification, reload } from 'f
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../../../firebase';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
+import { FaSpinner } from 'react-icons/fa';
 
 const countries = [
   'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Other'
@@ -96,10 +97,18 @@ export default function SignupPage() {
     setLoading(true);
     setError('');
     try {
-      await sendEmailVerification(auth.currentUser);
+      const user = auth.currentUser;
+      if (!user) {
+        setError('User not found. Please try again later.');
+        setLoading(false);
+        return;
+      }
+      await sendEmailVerification(user);
       setError('Verification email resent. Please check your inbox.');
+      console.log('Verification email resent to:', user.email);
     } catch (err) {
       setError('Failed to resend verification email.');
+      console.error('Resend verification error:', err);
     }
     setLoading(false);
   };
@@ -113,7 +122,7 @@ export default function SignupPage() {
     const trimmedForm = Object.fromEntries(
       Object.entries(form).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v])
     );
-    const required = ['surname','firstname','middlename','email','password','gender','mobile','address','institution'];
+    const required = ['surname','firstname','email','password','gender','mobile','address','institution', 'dob'];
     for (let key of required) {
       if (!trimmedForm[key]) {
         setError('Please fill all required fields.');
@@ -181,11 +190,62 @@ export default function SignupPage() {
   // Step 3: Handle payment with Flutterwave
   const handleFlutterwavePayment = () => {
     setError('');
-    // Load Flutterwave inline script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.flutterwave.com/v3.js';
-    script.async = true;
-    script.onload = () => {
+    setLoading(true);
+    // Prevent duplicate script tags
+    if (!document.getElementById('flutterwave-script')) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.flutterwave.com/v3.js';
+      script.id = 'flutterwave-script';
+      script.async = true;
+      script.onload = () => {
+        window.FlutterwaveCheckout({
+          public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
+          tx_ref: `${userId}-${Date.now()}`,
+          amount: 21000,
+          currency: 'NGN',
+          payment_options: 'banktransfer,card',
+          customer: {
+            email: form.email,
+            name: `${form.surname} ${form.firstname}`,
+            phonenumber: form.mobile,
+          },
+          customizations: {
+            title: 'School Registration Fee',
+            description: 'Registration payment for dashboard',
+            logo: '/logo-50x100.png',
+          },
+          callback: async function(response) {
+            // Call backend to verify payment
+            setLoading(true);
+            try {
+              const res = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tx_ref: response.transaction_id, userId }),
+              });
+              const data = await res.json();
+              if (data.status === 'success') {
+                setPaymentStatus('success');
+                setStep(4); // Registration complete
+                if (typeof window.close === 'function') {
+                  window.close();
+                }
+                router.push('/'); // Redirect to dashboard
+              } else {
+                setError('Payment not completed.');
+              }
+            } catch (e) {
+              setError('Payment verification failed.');
+            }
+            setLoading(false);
+          },
+          onclose: function() {
+            // User closed payment modal
+          },
+        });
+      };
+      document.body.appendChild(script);
+    } else {
       window.FlutterwaveCheckout({
         public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
         tx_ref: `${userId}-${Date.now()}`,
@@ -203,7 +263,6 @@ export default function SignupPage() {
           logo: '/logo-50x100.png',
         },
         callback: async function(response) {
-          // Call backend to verify payment
           setLoading(true);
           try {
             const res = await fetch('/api/verify-payment', {
@@ -214,13 +273,11 @@ export default function SignupPage() {
             const data = await res.json();
             if (data.status === 'success') {
               setPaymentStatus('success');
-              setStep(4); // Registration complete
-            
-              // Fallback: try to close window (for popup mode)
+              setStep(4);
               if (typeof window.close === 'function') {
                 window.close();
               }
-              router.push('/'); // Redirect to dashboard
+              router.push('/');
             } else {
               setError('Payment not completed.');
             }
@@ -229,12 +286,10 @@ export default function SignupPage() {
           }
           setLoading(false);
         },
-        onclose: function() {
-          // User closed payment modal
-        },
+        onclose: function() {},
       });
-    };
-    document.body.appendChild(script);
+    }
+    setLoading(false);
   };
 
   // Calculate max date for DOB (12 years ago from today)
@@ -259,7 +314,17 @@ export default function SignupPage() {
         <div className="flex justify-center mb-6 lg:hidden">
           <img src="/logo-50x100.jpg" alt="Logo" width={300} height={120} />
         </div>
-        <form onSubmit={step === 1 ? handleInfoSubmit : step === 2 ? (e) => e.preventDefault() : (e) => { e.preventDefault(); handleFlutterwavePayment(); }} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md" encType="multipart/form-data">
+        <form
+          onSubmit={
+            step === 1
+              ? handleInfoSubmit
+              : step === 2 && emailVerified
+              ? handlePhotoSubmit
+              : (e) => { e.preventDefault(); handleFlutterwavePayment(); }
+          }
+          className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md"
+          encType="multipart/form-data"
+        >
           <h2 className="text-2xl mb-6 text-white text-center">Application Form</h2>
           {error && <div className="mb-4 text-red-500">{error}</div>}
           {step === 1 && (
@@ -292,8 +357,14 @@ export default function SignupPage() {
             <div className="flex flex-col gap-4 items-center">
               <h3 className="text-xl text-white font-bold mb-2">Verify Your Email</h3>
               <p className="text-gray-300 text-center mb-2">A verification email has been sent to <span className="font-bold">{form.email}</span>. Please verify your email address to continue registration.</p>
-              <button type="button" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" onClick={handleResendVerification} disabled={loading}>Resend Verification Email</button>
-              <button type="button" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" onClick={async () => { setVerificationCheckLoading(true); await reload(auth.currentUser); setEmailVerified(auth.currentUser.emailVerified); setVerificationCheckLoading(false); if (!auth.currentUser.emailVerified) setError('Email not verified yet, please check your inbox or spam folder'); else setError(''); }} disabled={verificationCheckLoading}>I've Verified My Email</button>
+              <button type="button" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center justify-center" onClick={handleResendVerification} disabled={loading}>
+                {loading && <FaSpinner className="animate-spin mr-2" />}
+                Resend Verification Email
+              </button>
+              <button type="button" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center justify-center" onClick={async () => { setVerificationCheckLoading(true); await reload(auth.currentUser); setEmailVerified(auth.currentUser.emailVerified); setVerificationCheckLoading(false); if (!auth.currentUser.emailVerified) setError('Email not verified yet, please check your inbox or spam folder'); else setError(''); }} disabled={verificationCheckLoading}>
+                {verificationCheckLoading && <FaSpinner className="animate-spin mr-2" />}
+                I've Verified My Email
+              </button>
               <p className="text-gray-400 text-xs mt-2">After verifying, click "I've Verified My Email" to continue.</p>
               {error && <div className="text-red-500 mt-2">{error}</div>}
             </div>
@@ -318,7 +389,8 @@ export default function SignupPage() {
           )}
           {/* Only show submit button for step 1, photo upload (after email verified), and payment step */}
           {(step === 1 || (step === 2 && emailVerified) || step === 3) && (
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6" disabled={loading}>
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6 flex items-center justify-center" disabled={loading}>
+              {loading && <FaSpinner className="animate-spin mr-2" />}
               {loading ? (step === 1 ? 'Registering...' : step === 2 ? 'Uploading...' : 'Processing Payment...') : (step === 1 ? 'Next: Upload Photo' : step === 2 ? 'Next: Payment' : 'Pay ₦21,000 Now To Finish Registration')}
             </button>
           )}
