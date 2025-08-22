@@ -83,16 +83,32 @@ export default function SignupPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    // Trim all inputs
+    const trimmedForm = Object.fromEntries(
+      Object.entries(form).map(([k, v]) => typeof v === 'string' ? v.trim() : v)
+    );
     const required = ['surname','firstname','middlename','email','password','gender','mobile','address','institution'];
     for (let key of required) {
-      if (!form[key]) {
+      if (!trimmedForm[key]) {
         setError('Please fill all required fields.');
         setLoading(false);
         return;
       }
     }
+    // Password length check
+    if (trimmedForm.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      setLoading(false);
+      return;
+    }
+    // Mobile number format check (basic: digits only, 10-15 chars)
+    if (!/^\d{10,15}$/.test(trimmedForm.mobile.replace(/\s+/g, ''))) {
+      setError('Please enter a valid mobile number (10-15 digits, numbers only).');
+      setLoading(false);
+      return;
+    }
     try {
-      const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      const userCred = await createUserWithEmailAndPassword(auth, trimmedForm.email, trimmedForm.password);
       await sendEmailVerification(userCred.user); // Send verification email
       setUserId(userCred.user.uid);
       setStep(2);
