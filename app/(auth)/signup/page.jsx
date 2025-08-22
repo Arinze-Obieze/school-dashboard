@@ -85,7 +85,7 @@ export default function SignupPage() {
     setLoading(true);
     // Trim all inputs
     const trimmedForm = Object.fromEntries(
-      Object.entries(form).map(([k, v]) => typeof v === 'string' ? v.trim() : v)
+      Object.entries(form).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v])
     );
     const required = ['surname','firstname','middlename','email','password','gender','mobile','address','institution'];
     for (let key of required) {
