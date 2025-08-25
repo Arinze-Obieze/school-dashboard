@@ -10,7 +10,7 @@ export default function ProtectedRoute({ children }) {
 
   useEffect(() => {
     if (!loading && !user && pathname !== '/login' && pathname !== '/signup') {
-      router.push('/login');
+      router.replace('/signup');
     }
   }, [user, loading, router, pathname]);
 
@@ -18,5 +18,8 @@ export default function ProtectedRoute({ children }) {
     return <div className="min-h-screen flex items-center justify-center text-white">Loading...</div>;
   }
 
+  if (!user && pathname !== '/login' && pathname !== '/signup') {
+    return null;
+  }
   return children;
 }
