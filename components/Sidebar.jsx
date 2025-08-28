@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import {
   FaHome, FaBook, FaBookReader, FaWpforms, FaGraduationCap, FaUser,
-  FaCog, FaComments, FaSignOutAlt,
+  FaCog,  FaSignOutAlt,
   FaTimes,
   FaChevronUp,
   FaChevronDown,
@@ -34,7 +34,6 @@ import {
   FaFileAlt
 } from 'react-icons/fa';
 import { LuMessagesSquare } from 'react-icons/lu';
-import { GrResources } from "react-icons/gr";
 import { MdOutlinePayments } from 'react-icons/md';
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
@@ -46,13 +45,8 @@ const menuItems = [
     { label: "Dashboard", icon: <FaHome />, href: "/" },
   
     {
-      label: "My Profile", icon: <FaUser />, href: "/profile", badge: "New",
-      subItems: [
-          { label: "View & Edit Personal Info", href: "/profile/edit", icon: <FaUser /> },
-          { label: "Upload Passport Photo", href: "/profile/photo", icon: <FaUpload /> },
-          { label: "Update Password", href: "/profile/password", icon: <FaKey /> },
-          { label: "Download Student ID Card", href: "/profile/id-card", icon: <FaIdCard /> },
-      ]
+      label: "My Profile", icon: <FaUser />, href: "/profile",
+     
   },
   {
     label: "Courses", icon: <FaGraduationCap />, href: "/courses",
