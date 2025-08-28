@@ -20,6 +20,6 @@ export default function ProtectedRoute({ children }) {
 
   if (!user && pathname !== '/login' && pathname !== '/signup') {
     return null;
-  }
+  }                          
   return children;
 }
