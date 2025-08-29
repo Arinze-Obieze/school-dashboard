@@ -4,7 +4,7 @@ import { FaBookOpen, FaDollarSign, FaChartLine } from 'react-icons/fa';
 import { MdEventNote, MdNotificationsActive } from 'react-icons/md';
 import Link from 'next/link';
 import Card from '@/components/Card';
-import Layout from './layout';
+import Layout from '../layout';
 
 
 const Dashboard = () => {
