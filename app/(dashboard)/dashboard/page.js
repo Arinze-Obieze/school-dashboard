@@ -11,8 +11,6 @@ const Dashboard = () => {
   // Sample data
   const stats = [
     { title: 'Courses Enrolled', value: 0, icon: <FaBookOpen className="text-blue-500 text-xl" />, bg: '#23272f', href: '/courses' },
-    { title: 'GPA', value: 0, icon: <FaChartLine className="text-green-500 text-xl" />, bg: '#23272f', href: '/exams/gpa-tracker' },
-    { title: 'Outstanding Fees', value: '0', icon: <FaDollarSign className="text-red-500 text-xl" />, bg: '#23272f', href: '/payments' },
   ];
 
   const upcomingExams = [
@@ -51,7 +49,7 @@ const Dashboard = () => {
       </div>
 
       {/* Upcoming Exams */}
-      <div className="bg-[#23272f] shadow rounded-lg p-5 border border-gray-700">
+      <div className="bg-[#23272f] mt-22 shadow rounded-lg p-5 border border-gray-700">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-100">
             <MdEventNote className="text-blue-400" />

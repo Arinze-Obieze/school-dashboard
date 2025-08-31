@@ -6,16 +6,16 @@ import { FaBookOpen, FaPlusCircle, FaCloudDownloadAlt, FaUpload, FaRegClock } fr
 
 const courseCards = [
   {
-    title: 'Registered Courses',
-    icon: <FaBookOpen className="text-3xl" />,
-    bg: '#4a90e2',
-    href: '/courses/registered'
-  },
-  {
     title: 'Register/Drop Courses',
     icon: <FaPlusCircle className="text-3xl" />,
     bg: '#7ed957',
     href: '/courses/register'
+  },
+  {
+    title: 'Registered Courses',
+    icon: <FaBookOpen className="text-3xl" />,
+    bg: '#4a90e2',
+    href: '/courses/registered'
   },
   {
     title: 'Course Materials',
@@ -23,12 +23,12 @@ const courseCards = [
     bg: '#f5a623',
     href: '/courses/materials'
   },
-  {
-    title: 'Assignment Uploads',
-    icon: <FaUpload className="text-3xl" />,
-    bg: '#d0021b',
-    href: '/courses/assignments'
-  },
+  // {
+  //   title: 'Assignment Uploads',
+  //   icon: <FaUpload className="text-3xl" />,
+  //   bg: '#d0021b',
+  //   href: '/courses/assignments'
+  // },
   {
     title: 'Class Schedule / Timetable',
     icon: <FaRegClock className="text-3xl" />,

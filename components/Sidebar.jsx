@@ -19,7 +19,7 @@ import {
   FaPlusCircle,
   FaCloudDownloadAlt,
   FaUpload,
-  FaRegClock,
+ 
   FaListAlt,
   FaCreditCard,
   FaHistory,
@@ -27,10 +27,7 @@ import {
   FaPrint,
   FaVideo,
   FaUsers,
-  FaBalanceScale,
-  FaCheckCircle,
-  FaIdCard,
-  FaKey,
+
   FaFileAlt
 } from 'react-icons/fa';
 import { LuMessagesSquare } from 'react-icons/lu';
@@ -51,11 +48,11 @@ const menuItems = [
   {
     label: "Courses", icon: <FaGraduationCap />, href: "/courses",
     subItems: [
+      { label: "Register", href: "/courses/register", icon: <FaPlusCircle /> },
         { label: "Registered Courses", href: "/courses/registered", icon: <FaBookOpen /> },
-        { label: "Register/Drop Courses", href: "/courses/register", icon: <FaPlusCircle /> },
         { label: "Course Materials", href: "/courses/materials", icon: <FaCloudDownloadAlt /> },
         { label: "Assignment Uploads", href: "/courses/assignments", icon: <FaUpload /> },
-        { label: "Class Schedule / Timetable", href: "/courses/timetable", icon: <FaRegClock /> },
+        // { label: "Class Schedule / Timetable", href: "/courses/timetable", icon: <FaRegClock /> },
     ]
 },
 {
@@ -65,7 +62,7 @@ const menuItems = [
       { label: "Take Online Exams", href: "/exams/online", icon: <FaLaptopCode /> },
       { label: "Submit Exam Scripts", href: "/exams/submit", icon: <FaPaperPlane /> },
       { label: "View Results", href: "/exams/results", icon: <FaChartBar /> },
-      { label: "GPA / CGPA Tracker", href: "/exams/gpa-tracker", icon: <FaGraduationCap /> },
+      // { label: "GPA / CGPA Tracker", href: "/exams/gpa-tracker", icon: <FaGraduationCap /> },
       { label: "Download Transcripts", href: "/exams/transcripts", icon: <FaFileDownload /> },
   ]
 },
@@ -79,15 +76,15 @@ const menuItems = [
       { label: "Print Invoice", href: "/payment/invoice", icon: <FaPrint /> },
   ]
 },
-{
-  label: "Academic Records", icon: <FaBook />, href: "/academic-records",
-  subItems: [
-      { label: "Course Registration History", href: "/academic-records/registration-history", icon: <FaBook /> },
-      { label: "Academic Standing", href: "/academic-records/standing", icon: <FaBalanceScale /> },
-      { label: "Download Admission Letter", href: "/academic-records/admission-letter", icon: <FaFileDownload /> },
-      { label: "Graduation Eligibility", href: "/academic-records/graduation-eligibility", icon: <FaCheckCircle /> },
-  ]
-},
+// {
+//   label: "Academic Records", icon: <FaBook />, href: "/academic-records",
+//   subItems: [
+//       { label: "Course Registration History", href: "/academic-records/registration-history", icon: <FaBook /> },
+//       { label: "Academic Standing", href: "/academic-records/standing", icon: <FaBalanceScale /> },
+//       { label: "Download Admission Letter", href: "/academic-records/admission-letter", icon: <FaFileDownload /> },
+//       { label: "Graduation Eligibility", href: "/academic-records/graduation-eligibility", icon: <FaCheckCircle /> },
+//   ]
+// },
 {
   label: "Resources", icon: <FaBook />, href: "/resources",
   subItems: [

@@ -19,10 +19,7 @@ function Header({ toggleSidebar, setToggleSidebar }) {
       </div>
 
       <div className='flex items-center gap-4'>
-      <IoSearch className='text-2xl'/>
       <IoIosNotificationsOutline className='text-2xl'/>
-      <MdOutlineFullscreenExit className='text-2xl'/>
-      <MdDashboard className='text-2xl'/>
       </div>
     </div>
   )
