@@ -6,7 +6,7 @@ import { FaBookOpen, FaPlusCircle, FaCloudDownloadAlt, FaUpload, FaRegClock } fr
 
 const courseCards = [
   {
-    title: 'Register/Drop Courses',
+    title: 'Register',
     icon: <FaPlusCircle className="text-3xl" />,
     bg: '#7ed957',
     href: '/courses/register'
