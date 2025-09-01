@@ -1,10 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { FiSearch, FiBook, FiUser, FiUsers, FiChevronRight, FiArrowLeft, FiCheck, FiX, FiCalendar, FiSpeaker } from 'react-icons/fi';
+import { FiSearch, FiBook, FiUser, FiUsers, FiArrowLeft, FiCheck, FiX, FiCalendar, FiSpeaker } from 'react-icons/fi';
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase';
+import {getAuth} from 'firebase/auth'
 
-const CourseSelectionPortal = ({ studentId }) => {
+const CourseSelectionPortal = () => {
   const [programType, setProgramType] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -13,7 +14,11 @@ const CourseSelectionPortal = ({ studentId }) => {
   const [registering, setRegistering] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // Fetch courses from Firestore using IIFE in useEffect
+
+const auth =getAuth();
+const user =auth.currentUser;
+
+// Fetch courses from Firestore using IIFE in useEffect
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -59,7 +64,7 @@ const CourseSelectionPortal = ({ studentId }) => {
 
   // Handle course registration
   const handleRegistration = async () => {
-    if (!studentId || !selectedCourse) {
+    if ( !selectedCourse) {
       setMessage({ text: 'Missing required information for registration.', type: 'error' });
       return;
     }
@@ -67,8 +72,8 @@ const CourseSelectionPortal = ({ studentId }) => {
     setRegistering(true);
     try {
       // Save to enrollments collection
-      await addDoc(collection(db, 'enrollments'), {
-        studentId,
+      await addDoc(collection(db, 'enrollments'), {     
+           userId: user.uid,
         courseId: selectedCourse.id,
         courseName: selectedCourse.name,
         programType,
