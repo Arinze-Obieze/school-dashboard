@@ -1,43 +1,70 @@
 'use client'
 import Card from '@/components/Card'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { FaBookOpen, FaPlusCircle, FaCloudDownloadAlt, FaUpload, FaRegClock } from 'react-icons/fa'
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
 
-
-const courseCards = [
-  {
-    title: 'Register',
-    icon: <FaPlusCircle className="text-3xl" />,
-    bg: '#7ed957',
-    href: '/courses/register'
-  },
-  {
-    title: 'Registered Courses',
-    icon: <FaBookOpen className="text-3xl" />,
-    bg: '#4a90e2',
-    href: '/courses/registered'
-  },
-  {
-    title: 'Course Materials',
-    icon: <FaCloudDownloadAlt className="text-3xl" />,
-    bg: '#f5a623',
-    href: '/courses/materials'
-  },
-  // {
-  //   title: 'Assignment Uploads',
-  //   icon: <FaUpload className="text-3xl" />,
-  //   bg: '#d0021b',
-  //   href: '/courses/assignments'
-  // },
-  {
-    title: 'Class Schedule / Timetable',
-    icon: <FaRegClock className="text-3xl" />,
-    bg: '#9013fe',
-    href: '/courses/timetable'
-  }
-]
 
 function Courses() {
+  const [registeredCount, setRegisteredCount] = useState(null);
+
+  useEffect(() => {
+    const fetchRegisteredCourses = async () => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) return;
+        const enrollmentRef = doc(db, 'enrollments', user.uid);
+        const enrollmentDoc = await getDoc(enrollmentRef);
+        if (enrollmentDoc.exists()) {
+          const courses = enrollmentDoc.data().courses || {};
+          setRegisteredCount(Object.keys(courses).length);
+        } else {
+          setRegisteredCount(0);
+        }
+      } catch (e) {
+        setRegisteredCount(0);
+      }
+    };
+    fetchRegisteredCourses();
+  }, []);
+
+  const courseCards = [
+    {
+      title: 'Register',
+      icon: <FaPlusCircle className="text-3xl" />, 
+      bg: '#7ed957',
+      href: '/courses/register'
+    },
+    {
+      title: 'Registered Courses',
+      icon: <FaBookOpen className="text-3xl" />, 
+      bg: '#4a90e2',
+      href: '/courses/registered',
+      count: registeredCount
+    },
+    {
+      title: 'Course Materials',
+      icon: <FaCloudDownloadAlt className="text-3xl" />, 
+      bg: '#f5a623',
+      href: '/courses/materials'
+    },
+    // {
+    //   title: 'Assignment Uploads',
+    //   icon: <FaUpload className="text-3xl" />,
+    //   bg: '#d0021b',
+    //   href: '/courses/assignments'
+    // },
+    {
+      title: 'Class Schedule / Timetable',
+      icon: <FaRegClock className="text-3xl" />, 
+      bg: '#9013fe',
+      href: '/courses/timetable'
+    }
+  ];
+
   return (
     <div>
       <div className='flex justify-between items-center mt-8 px-4'>
@@ -57,6 +84,7 @@ function Courses() {
             icon={card.icon}
             bg={card.bg}
             href={card.href}
+            count={card.count}
           />
         ))}
       </div>

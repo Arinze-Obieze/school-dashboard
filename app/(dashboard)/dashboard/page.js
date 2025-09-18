@@ -61,7 +61,7 @@ const Dashboard = () => {
           {upcomingExams.map((exam, index) => (
             <li key={index} className="border border-gray-700 rounded p-3 hover:bg-[#343940] transition">
               <p className="font-medium text-gray-100">{exam.title}</p>
-              <p className="text-sm text-gray-400">{exam.date} at {exam.time}</p>
+              <p className="text-sm text-gray-400">{exam.date} {exam.time}</p>
             </li>
           ))}
         </ul>

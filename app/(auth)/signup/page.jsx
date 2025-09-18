@@ -103,7 +103,14 @@ export default function SignupPage() {
         setLoading(false);
         return;
       }
-      await sendEmailVerification(user);
+
+  // Use custom redirect URL for verification
+  const actionCodeSettings = {
+    url: `${window.location.origin}/verify-email`, // ✅ Your domain
+    handleCodeInApp: true,
+  };
+
+      await sendEmailVerification(user,actionCodeSettings);
       setError('Verification email resent. Please check your inbox.');
       console.log('Verification email resent to:', user.email);
     } catch (err) {
@@ -144,7 +151,12 @@ export default function SignupPage() {
     }
     try {
       const userCred = await createUserWithEmailAndPassword(auth, trimmedForm.email, trimmedForm.password);
-      await sendEmailVerification(userCred.user); // Send verification email
+      // Send verification email with custom URL
+      const actionCodeSettings = {
+        url: `${window.location.origin}/verify-email`,
+        handleCodeInApp: true,
+      };
+      await sendEmailVerification(userCred.user, actionCodeSettings);
       setUserId(userCred.user.uid);
       setStep(2);
       setError('A verification email has been sent. Please verify your email before logging in.');
