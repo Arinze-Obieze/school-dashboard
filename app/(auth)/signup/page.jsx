@@ -41,6 +41,17 @@ export default function SignupPage() {
   const [paymentStatus, setPaymentStatus] = useState('pending'); // 'pending' | 'success'
   const router = useRouter();
 
+  // Preload Flutterwave script once
+  useEffect(() => {
+    if (!document.getElementById('flutterwave-script')) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.flutterwave.com/v3.js';
+      script.id = 'flutterwave-script';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
   const handleChange = e => {
     const { name, value, files } = e.target;
     setForm(f => ({ ...f, [name]: files ? files[0] : value }));
@@ -78,9 +89,10 @@ export default function SignupPage() {
   // Step 1: Register user 
   const handleInfoSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     setLoading(true);
-    // Trim all inputs
+
     const trimmedForm = Object.fromEntries(
       Object.entries(form).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v])
     );
@@ -92,13 +104,11 @@ export default function SignupPage() {
         return;
       }
     }
-    // Password length check
     if (trimmedForm.password.length < 6) {
       setError('Password must be at least 6 characters long.');
       setLoading(false);
       return;
     }
-    // Mobile number format check (basic: digits only, 10-15 chars)
     if (!/^\d{10,15}$/.test(trimmedForm.mobile.replace(/\s+/g, ''))) {
       setError('Please enter a valid mobile number (10-15 digits, numbers only).');
       setLoading(false);
@@ -107,7 +117,7 @@ export default function SignupPage() {
     try {
       const userCred = await createUserWithEmailAndPassword(auth, trimmedForm.email, trimmedForm.password);
       setUserId(userCred.user.uid);
-      setStep(2); // Go directly to photo upload step
+      setStep(2);
     } catch (err) {
       setError(err.message);
     }
@@ -117,6 +127,7 @@ export default function SignupPage() {
   // Step 2: Upload photo and save profile
   const handlePhotoSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     setLoading(true);
     let uploadedPhotoURL = '';
@@ -149,127 +160,95 @@ export default function SignupPage() {
 
   // Step 3: Handle payment with Flutterwave
   const handleFlutterwavePayment = () => {
-    setError('');
+    if (!userId) {
+      setError('User not found. Please complete previous steps.');
+      return;
+    }
+    setError("");
     setLoading(true);
-    // Prevent duplicate script tags
-    if (!document.getElementById('flutterwave-script')) {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.flutterwave.com/v3.js';
-      script.id = 'flutterwave-script';
-      script.async = true;
-      script.onload = () => {
-        window.FlutterwaveCheckout({
-          public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-          tx_ref: `${userId}-${Date.now()}`,
-          amount: 21000,
-          currency: 'NGN',
-          payment_options: 'banktransfer,card',
-          customer: {
-            email: form.email,
-            name: `${form.surname} ${form.firstname}`,
-            phonenumber: form.mobile,
-          },
-          customizations: {
-            title: 'School Registration Fee',
-            description: 'Registration payment for dashboard',
-            logo: '/logo-50x100.png',
-          },
-          callback: async function(response) {
-            // Call backend to verify payment
-            setLoading(true);
-            try {
-              const res = await fetch('/api/verify-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tx_ref: response.transaction_id, userId }),
-              });
-              const data = await res.json();
-              if (data.status === 'success') {
-                setPaymentStatus('success');
-                setStep(4); // Registration complete
-                if (typeof window.close === 'function') {
-                  window.close();
-                }
-                router.push('/'); // Redirect to dashboard
-              } else {
-                setError('Payment not completed.');
-              }
-            } catch (e) {
-              setError('Payment verification failed.');
-            }
-            setLoading(false);
-          },
-          onclose: function() {
-            // User closed payment modal
-          },
-        });
-      };
-      document.body.appendChild(script);
-    } else {
+
+    // Ensure Flutterwave script is loaded
+    const triggerPayment = () => {
       window.FlutterwaveCheckout({
         public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
         tx_ref: `${userId}-${Date.now()}`,
         amount: 21000,
-        currency: 'NGN',
-        payment_options: 'banktransfer,card',
+        currency: "NGN",
+        payment_options: "banktransfer,card",
         customer: {
           email: form.email,
           name: `${form.surname} ${form.firstname}`,
           phonenumber: form.mobile,
         },
         customizations: {
-          title: 'School Registration Fee',
-          description: 'Registration payment for dashboard',
-          logo: '/logo-50x100.png',
+          title: "School Registration Fee",
+          description: "Registration payment for dashboard",
+          logo: "/logo-50x100.png",
         },
-        callback: async function(response) {
+        callback: async function (response) {
           setLoading(true);
           try {
-            const res = await fetch('/api/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tx_ref: response.transaction_id, userId }),
+            const res = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                tx_ref: response.tx_ref,
+                transaction_id: response.transaction_id,
+                userId,
+              }),
             });
             const data = await res.json();
-            if (data.status === 'success') {
-              setPaymentStatus('success');
+            if (data.status === "success") {
+              await setDoc(doc(db, "users", userId), {
+                paymentStatus: "success",
+                paymentDate: new Date().toISOString(),
+                transactionId: response.transaction_id,
+                txRef: response.tx_ref,
+              }, { merge: true });
+              setPaymentStatus("success");
               setStep(4);
-              if (typeof window.close === 'function') {
-                window.close();
-              }
-              router.push('/');
+              setTimeout(() => router.push("/dashboard"), 3000);
             } else {
-              setError('Payment not completed.');
+              setError("Payment not completed.");
             }
           } catch (e) {
-            setError('Payment verification failed.');
+            setError("Payment verification failed.");
+          } finally {
+            setLoading(false);
           }
+        },
+        onclose: function () {
           setLoading(false);
         },
-        onclose: function() {},
       });
+    };
+
+    if (!document.getElementById("flutterwave-script")) {
+      const script = document.createElement("script");
+      script.src = "https://checkout.flutterwave.com/v3.js";
+      script.id = "flutterwave-script";
+      script.async = true;
+      script.onload = () => triggerPayment();
+      document.body.appendChild(script);
+    } else {
+      triggerPayment();
     }
-    setLoading(false);
   };
 
-  // Calculate max date for DOB (12 years ago from today)
   const today = new Date();
   const maxDob = new Date(today.getFullYear() - 12, today.getMonth(), today.getDate())
     .toISOString().split('T')[0];
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center bg-[#23272f]">
-      {/* Side panel for large screens */}
       <div className="hidden lg:flex flex-col justify-center items-center w-1/2 h-full bg-gradient-to-br from-blue-900 to-blue-600 text-white mx-12 p-12">
         <img src="/logo-50x100.jpg" alt="Logo" width={300} height={120} className="mb-8" />
         <h1 className="text-4xl font-bold mb-4">Join Our Community!</h1>
         <p className="text-lg mb-8 text-center max-w-md">Create your account to access courses, exams, resources, and more. Start your academic journey with us today.</p>
         <div className="w-64 h-64 bg-white/10 rounded-2xl flex items-center justify-center">
-          {/* You can replace this with an illustration or SVG */}
           <img src="/globe.svg" alt="Illustration" className="w-40 h-40" />
         </div>
       </div>
-      {/* Main form area */}
       <div className="flex flex-1 flex-col items-center justify-center w-full lg:w-1/2 px-4 py-8">
         <div className="flex justify-center mb-6 lg:hidden">
           <img src="/logo-50x100.jpg" alt="Logo" width={300} height={120} />
@@ -306,11 +285,10 @@ export default function SignupPage() {
                 <option value="">Select Nationality (optional)</option>
                 {countries.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-            <div className='flex flex-col gap-1'>
-            <label className="text-white">Date of Birth*</label>
-            <input name="dob" type="date" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.dob} onChange={handleChange} max={maxDob} />
-            </div>
-
+              <div className='flex flex-col gap-1'>
+                <label className="text-white">Date of Birth*</label>
+                <input name="dob" type="date" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.dob} onChange={handleChange} max={maxDob} />
+              </div>
             </div>
           )}
           {step === 2 && (
@@ -325,13 +303,21 @@ export default function SignupPage() {
           {step === 3 && (
             <div className="flex flex-col gap-4 items-center">
               <h3 className="text-xl text-white font-bold mb-2">Application Fee</h3>
-              <p className="text-gray-300 text-center mb-2">To complete your application, please pay <span className="font-bold text-green-400">₦21,000</span> to the WACCPS using Flutterwave.</p>
-                                                          
-             
-              <p className="text-gray-400 text-xs mt-2">You will be redirected to Flutterwave to complete your payment securely.</p>
+              <p className="text-gray-300 text-center mb-2">
+                To complete your application, please pay <span className="font-bold text-green-400">₦21,000</span> to the WACCPS using Flutterwave.
+              </p>
+              <p className="text-gray-400 text-xs mt-2">
+                You will be redirected to Flutterwave to complete your payment securely.
+              </p>
             </div>
           )}
-          {/* Only show submit button for step 1, photo upload, and payment step */}
+          {step === 4 && (
+            <div className="flex flex-col gap-4 items-center">
+              <h3 className="text-xl text-green-500 font-bold mb-2">Registration Complete!</h3>
+              <p className="text-gray-300 text-center mb-2">Your payment was successful and your registration is now complete.</p>
+              <p className="text-gray-400 text-sm mt-2">You will be redirected to your dashboard shortly.</p>
+            </div>
+          )}
           {(step === 1 || step === 2 || step === 3) && (
             <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6 flex items-center justify-center" disabled={loading}>
               {loading && <FaSpinner className="animate-spin mr-2" />}

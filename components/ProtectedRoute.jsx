@@ -12,12 +12,12 @@ export default function ProtectedRoute({ children }) {
   const [checkingPayment, setCheckingPayment] = useState(true);
 
   useEffect(() => {
-    const checkAccess = async () => {
+    const checkAccess = async () => {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
       // If auth is still loading, wait
       if (loading) return;
 
-      // If not logged in and not on login/signup page, redirect to signup
-      if (!user && pathname !== '/login' && pathname !== '/signup') {
+      // If not logged in and not on login/signup/payment-required page, redirect to signup
+      if (!user && pathname !== '/login' && pathname !== '/signup' && pathname !== '/payment-required') {
         router.replace('/signup');
         return;
       }
@@ -35,9 +35,9 @@ export default function ProtectedRoute({ children }) {
           }
 
           const data = snap.data();
-          if (data.paymentStatus !== 'success' && pathname !== '/signup') {
-            // Redirect unpaid users back to signup/payment step
-            router.replace('/signup');
+          if (data.paymentStatus !== 'success' && pathname !== '/signup' && pathname !== '/payment-required') {
+            // Redirect unpaid users to payment-required page
+            router.replace('/payment-required');
             return;
           }
         } catch (err) {

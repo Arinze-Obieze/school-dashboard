@@ -2,22 +2,52 @@
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { auth } from '../../../firebase';
+import { auth,db } from '../../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { FaSpinner } from 'react-icons/fa';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+
+  const formatError = (err) => {
+    switch (err.code) {
+      case 'auth/user-not-found':
+        return 'No account found with this email.';
+      case 'auth/wrong-password':
+        return 'Incorrect password. Try again.';
+      case 'auth/invalid-email':
+        return 'Please enter a valid email.';
+        case 'auth/invalid-credential':
+          return 'Please enter a valid email or password.';
+      default:
+        return 'Login failed. Please try again.';
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true);
     setError('');
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/');
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      // Fetch user profile from Firestore
+      const { user } = userCred;
+      const ref = doc(db, 'users', user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists() || snap.data().paymentStatus !== 'success') {
+                router.push('/payment-required');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
-      setError(err.message);
+      setError(formatError(err));
+    }finally{
+      setLoading(false)
     }
   };
 
@@ -57,7 +87,12 @@ export default function LoginPage() {
             onChange={e => setPassword(e.target.value)}
             required
           />
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 cursor-pointer text-white py-2 rounded">Login</button>
+          <button 
+          disabled={loading}
+          type="submit" 
+          className="w-full bg-blue-600 hover:bg-blue-700 cursor-pointer text-white py-2 rounded">
+           {loading ? <FaSpinner className="animate-spin mx-auto" /> : 'Login'}
+            </button>
           <p className="mt-4 text-gray-400 text-sm text-center">
           Don&apos;t have an account? <a href="/signup" className="text-blue-400 hover:underline">Apply Here</a>
           </p>
