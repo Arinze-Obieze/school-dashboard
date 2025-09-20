@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '../../../firebase';
 
@@ -8,36 +8,16 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [showResend, setShowResend] = useState(false);
-  const [resendMsg, setResendMsg] = useState('');
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    setResendMsg('');
     try {
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
-      if (!userCred.user.emailVerified) {
-        setError('Please verify your email before logging in. Check your inbox and spam folder for the verification link.');
-        setShowResend(true);
-        return;
-      }
+      await signInWithEmailAndPassword(auth, email, password);
       router.push('/');
     } catch (err) {
       setError(err.message);
-    }
-  };
-
-  const handleResendVerification = async () => {
-    setResendMsg('');
-    setError('');
-    try {
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(userCred.user);
-      setResendMsg('Verification email resent. Please check your inbox.');
-    } catch (err) {
-      setError('Unable to resend verification email. Please check your credentials.');
     }
   };
 
@@ -61,10 +41,6 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="bg-[#343940] p-8 rounded shadow-md w-full max-w-sm">
           <h2 className="text-2xl mb-6 text-white text-center">Login</h2>
           {error && <div className="mb-4 text-red-500">{error}</div>}
-          {showResend && (
-            <button type="button" onClick={handleResendVerification} className="mb-4 w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded">Resend Verification Email</button>
-          )}
-          {resendMsg && <div className="mb-4 text-green-500">{resendMsg}</div>}
           <input
             type="email"
             placeholder="Email"
