@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createUserWithEmailAndPassword, sendEmailVerification, reload } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../../../firebase';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
@@ -12,7 +12,6 @@ const countries = [
 
 // Email validation function
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
 
 async function uploadToR2(file, userId) {
   if (!file) return '';
@@ -40,26 +39,21 @@ export default function SignupPage() {
   const [userId, setUserId] = useState('');
   const [photoURL, setPhotoURL] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('pending'); // 'pending' | 'success'
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [verificationCheckLoading, setVerificationCheckLoading] = useState(false);
   const router = useRouter();
 
   const handleChange = e => {
     const { name, value, files } = e.target;
     setForm(f => ({ ...f, [name]: files ? files[0] : value }));
   
-  
-  // New email validation 
-  if (name === 'email' && value && !isValidEmail(value)) {
-    setError('Please enter a valid email address');
-  } else if (name === 'email' && !value) {
-    setError('Email is required');
-  } else if (error && name === 'email' && isValidEmail(value)) {
-    setError(''); // Clear error when email becomes valid
-  }
+    // New email validation 
+    if (name === 'email' && value && !isValidEmail(value)) {
+      setError('Please enter a valid email address');
+    } else if (name === 'email' && !value) {
+      setError('Email is required');
+    } else if (error && name === 'email' && isValidEmail(value)) {
+      setError(''); // Clear error when email becomes valid
+    }
   };
-
-
 
   // Check if user has incomplete registration (e.g., payment not done) 
   useEffect(() => {
@@ -80,45 +74,6 @@ export default function SignupPage() {
     };
     checkPayment();
   }, [userId]);
-
-  // Check email verification status
-  useEffect(() => {
-    if (step === 2 && auth.currentUser) {
-      setVerificationCheckLoading(true);
-      reload(auth.currentUser).then(() => {
-        setEmailVerified(auth.currentUser.emailVerified);
-        setVerificationCheckLoading(false);
-      });
-    }
-  }, [step]);
-
-  // Resend verification email
-  const handleResendVerification = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        setError('User not found. Please try again later.');
-        setLoading(false);
-        return;
-      }
-
-  // Use custom redirect URL for verification
-  const actionCodeSettings = {
-    url: `${window.location.origin}/verify-email`, // ✅ Your domain
-    handleCodeInApp: true,
-  };
-
-      await sendEmailVerification(user,actionCodeSettings);
-      setError('Verification email resent. Please check your inbox.');
-      console.log('Verification email resent to:', user.email);
-    } catch (err) {
-      setError('Failed to resend verification email.');
-      console.error('Resend verification error:', err);
-    }
-    setLoading(false);
-  };
 
   // Step 1: Register user 
   const handleInfoSubmit = async (e) => {
@@ -151,15 +106,8 @@ export default function SignupPage() {
     }
     try {
       const userCred = await createUserWithEmailAndPassword(auth, trimmedForm.email, trimmedForm.password);
-      // Send verification email with custom URL
-      const actionCodeSettings = {
-        url: `${window.location.origin}/verify-email`,
-        handleCodeInApp: true,
-      };
-      await sendEmailVerification(userCred.user, actionCodeSettings);
       setUserId(userCred.user.uid);
-      setStep(2);
-      setError('A verification email has been sent. Please verify your email before logging in.');
+      setStep(2); // Go directly to photo upload step
     } catch (err) {
       setError(err.message);
     }
@@ -330,7 +278,7 @@ export default function SignupPage() {
           onSubmit={
             step === 1
               ? handleInfoSubmit
-              : step === 2 && emailVerified
+              : step === 2
               ? handlePhotoSubmit
               : (e) => { e.preventDefault(); handleFlutterwavePayment(); }
           }
@@ -365,23 +313,7 @@ export default function SignupPage() {
 
             </div>
           )}
-          {step === 2 && !emailVerified && (
-            <div className="flex flex-col gap-4 items-center">
-              <h3 className="text-xl text-white font-bold mb-2">Verify Your Email</h3>
-              <p className="text-gray-300 text-center mb-2">A verification email has been sent to <span className="font-bold">{form.email}</span>. Please verify your email address to continue registration.</p>
-              <button type="button" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center justify-center" onClick={handleResendVerification} disabled={loading}>
-                {loading && <FaSpinner className="animate-spin mr-2" />}
-                Resend Verification Email
-              </button>
-              <button type="button" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center justify-center" onClick={async () => { setVerificationCheckLoading(true); await reload(auth.currentUser); setEmailVerified(auth.currentUser.emailVerified); setVerificationCheckLoading(false); if (!auth.currentUser.emailVerified) setError('Email not verified yet, please check your inbox or spam folder'); else setError(''); }} disabled={verificationCheckLoading}>
-                {verificationCheckLoading && <FaSpinner className="animate-spin mr-2" />}
-                I've Verified My Email
-              </button>
-              <p className="text-gray-400 text-xs mt-2">After verifying, click "I've Verified My Email" to continue.</p>
-              {error && <div className="text-red-500 mt-2">{error}</div>}
-            </div>
-          )}
-          {step === 2 && emailVerified && (
+          {step === 2 && (
             <div className="flex flex-col gap-4">
               <label className="text-white">Upload Passport Photo*</label>
               <input name="photo" type="file" accept="image/*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" onChange={handleChange} required />
@@ -394,13 +326,13 @@ export default function SignupPage() {
             <div className="flex flex-col gap-4 items-center">
               <h3 className="text-xl text-white font-bold mb-2">Application Fee</h3>
               <p className="text-gray-300 text-center mb-2">To complete your application, please pay <span className="font-bold text-green-400">₦21,000</span> to the WACCPS using Flutterwave.</p>
-            
+                                                          
              
               <p className="text-gray-400 text-xs mt-2">You will be redirected to Flutterwave to complete your payment securely.</p>
             </div>
           )}
-          {/* Only show submit button for step 1, photo upload (after email verified), and payment step */}
-          {(step === 1 || (step === 2 && emailVerified) || step === 3) && (
+          {/* Only show submit button for step 1, photo upload, and payment step */}
+          {(step === 1 || step === 2 || step === 3) && (
             <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6 flex items-center justify-center" disabled={loading}>
               {loading && <FaSpinner className="animate-spin mr-2" />}
               {loading ? (step === 1 ? 'Registering...' : step === 2 ? 'Uploading...' : 'Processing Payment...') : (step === 1 ? 'Next: Upload Photo' : step === 2 ? 'Next: Payment' : 'Pay ₦21,000 Now To Finish Registration')}
