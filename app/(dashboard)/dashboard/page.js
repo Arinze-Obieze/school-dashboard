@@ -27,7 +27,6 @@ const Dashboard = () => {
   ];
 
   return (
-  <Layout>
       <div className="p-6 space-y-6 bg-[#3e444d]">
       {/* Welcome Message */}
       <div>
@@ -85,7 +84,6 @@ const Dashboard = () => {
         </ul>
       </div>
     </div>
-  </Layout>
   );
 };
 
