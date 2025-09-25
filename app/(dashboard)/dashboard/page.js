@@ -1,10 +1,11 @@
 'use client';
 import React from 'react';
 import { FaBookOpen, FaDollarSign, FaChartLine } from 'react-icons/fa';
-import { MdEventNote, MdNotificationsActive } from 'react-icons/md';
+import { MdEventNote} from 'react-icons/md';
 import Link from 'next/link';
 import Card from '@/components/Card';
 import Layout from '../layout';
+import Notifications from '@/components/Notifications';
 
 
 const Dashboard = () => {
@@ -20,11 +21,7 @@ const Dashboard = () => {
     */}
   ];
 
-  const notifications = [
-    { id: 1, message: 'School portal will be under maintenance this weekend.' },
-    { id: 2, message: 'Get to know your center.' },
-    { id: 3, message: 'Application is still on.' },
-  ];
+
 
   return (
       <div className="p-6 space-y-6 bg-[#3e444d]">
@@ -66,23 +63,7 @@ const Dashboard = () => {
         </ul>
       </div>
 
-      {/* Notifications */}
-      <div className="bg-[#23272f] shadow rounded-lg p-5 border border-gray-700">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-100">
-            <MdNotificationsActive className="text-orange-400" />
-            Notifications & Announcements
-          </h2>
-          <Link href="/notifications" className="text-sm text-orange-400 hover:underline">Read More</Link>
-        </div>
-        <ul className="space-y-2">
-          {notifications.slice(0, 3).map((note) => (
-            <li key={note.id} className="text-gray-200 text-sm border-l-4 border-orange-400 pl-3">
-              • {note.message}
-            </li>
-          ))}
-        </ul>
-      </div>
+    <Notifications/>
     </div>
   );
 };
