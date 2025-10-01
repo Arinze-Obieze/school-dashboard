@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { auth, db } from '../../../firebase';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
 import { FaSpinner } from 'react-icons/fa';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 const countries = [
   'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Other'
@@ -32,6 +34,7 @@ export default function SignupPage() {
     surname: '', firstname: '', middlename: '', email: '', password: '',
     dob: '', gender: '', mobile: '', address: '', institution: '', nationality: '', photo: null
   });
+  const [phoneValue, setPhoneValue] = useState('');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -96,26 +99,30 @@ export default function SignupPage() {
     const trimmedForm = Object.fromEntries(
       Object.entries(form).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v])
     );
+    
+    // Update form with phone value
+    const formWithPhone = { ...trimmedForm, mobile: phoneValue };
+
     const required = ['surname','firstname','email','password','gender','mobile','address','institution', 'dob'];
     for (let key of required) {
-      if (!trimmedForm[key]) {
+      if (!formWithPhone[key]) {
         setError('Please fill all required fields.');
         setLoading(false);
         return;
       }
     }
-    if (trimmedForm.password.length < 6) {
+    if (formWithPhone.password.length < 6) {
       setError('Password must be at least 6 characters long.');
       setLoading(false);
       return;
     }
-    if (!/^\d{10,15}$/.test(trimmedForm.mobile.replace(/\s+/g, ''))) {
-      setError('Please enter a valid mobile number (10-15 digits, numbers only).');
+    if (!phoneValue) {
+      setError('Please enter a valid mobile number.');
       setLoading(false);
       return;
     }
     try {
-      const userCred = await createUserWithEmailAndPassword(auth, trimmedForm.email, trimmedForm.password);
+      const userCred = await createUserWithEmailAndPassword(auth, formWithPhone.email, formWithPhone.password);
       setUserId(userCred.user.uid);
       setStep(2);
     } catch (err) {
@@ -143,7 +150,7 @@ export default function SignupPage() {
         email: form.email,
         dob: form.dob || '',
         gender: form.gender,
-        mobile: form.mobile,
+        mobile: phoneValue,
         address: form.address,
         institution: form.institution,
         nationality: form.nationality || '',
@@ -178,7 +185,7 @@ export default function SignupPage() {
         customer: {
           email: form.email,
           name: `${form.surname} ${form.firstname}`,
-          phonenumber: form.mobile,
+          phonenumber: phoneValue,
         },
         customizations: {
           title: "School Registration Fee",
@@ -261,40 +268,88 @@ export default function SignupPage() {
               ? handlePhotoSubmit
               : (e) => { e.preventDefault(); handleFlutterwavePayment(); }
           }
-          className="bg-[#343940] p-8 rounded shadow-md w-full max-w-md"
+          className="bg-[#343940] p-6 rounded shadow-md w-full max-w-md"
           encType="multipart/form-data"
         >
-          <h2 className="text-2xl mb-6 text-white text-center">Application Form</h2>
-          {error && <div className="mb-4 text-red-500">{error}</div>}
+          <h2 className="text-2xl mb-4 text-white text-center">Application Form</h2>
+          {error && <div className="mb-4 text-red-500 text-sm">{error}</div>}
           {step === 1 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input name="surname" placeholder="Surname*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.surname} onChange={handleChange} required />
-              <input name="firstname" placeholder="First Name*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.firstname} onChange={handleChange} required />
-              <input name="middlename" placeholder="Middle Name*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.middlename} onChange={handleChange} required />
-              <input name="email" type="email" placeholder="Email Address*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.email} onChange={handleChange} required />
-              <input name="password" type="password" placeholder="Password*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.password} onChange={handleChange} required />
-              <input name="mobile" placeholder="Mobile*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.mobile} onChange={handleChange} required />
-              <input name="address" placeholder="Contact Address*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.address} onChange={handleChange} required />
-              <input name="institution" placeholder="Institution*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.institution} onChange={handleChange} required />
-              <select name="gender" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.gender} onChange={handleChange} required>
-                <option value="">Select Gender*</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
-              <select name="nationality" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.nationality} onChange={handleChange}>
-                <option value="">Select Nationality (optional)</option>
-                {countries.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <div className='flex flex-col gap-1'>
-                <label className="text-white">Date of Birth*</label>
-                <input name="dob" type="date" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" value={form.dob} onChange={handleChange} max={maxDob} />
+              <div className="flex flex-col gap-1">
+                <label className="text-white text-sm">Surname*</label>
+                <input name="surname" placeholder="Surname" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.surname} onChange={handleChange} required />
+              </div>
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-white text-sm">First Name*</label>
+                <input name="firstname" placeholder="First Name" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.firstname} onChange={handleChange} required />
+              </div>
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-white text-sm">Middle Name*</label>
+                <input name="middlename" placeholder="Middle Name" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.middlename} onChange={handleChange} required />
+              </div>
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-white text-sm">Email*</label>
+                <input name="email" type="email" placeholder="Email" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.email} onChange={handleChange} required />
+              </div>
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-white text-sm">Password*</label>
+                <input name="password" type="password" placeholder="Password" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.password} onChange={handleChange} required />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-white text-sm">Date of Birth*</label>
+                <input name="dob" type="date" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.dob} onChange={handleChange} max={maxDob} />
+              </div>
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-white text-sm">Gender*</label>
+                <select name="gender" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.gender} onChange={handleChange} required>
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2 flex flex-col gap-1">
+                <label className="text-white text-sm">Mobile Number*</label>
+                <PhoneInput
+                  international
+                  defaultCountry="NG"
+                  value={phoneValue}
+                  onChange={setPhoneValue}
+                  className="phone-input-custom"
+                  inputClassName="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 w-full text-sm"
+                  buttonClassName="bg-[#23272f] border border-gray-600 rounded-l"
+                />
+              </div>
+              
+              <div className="md:col-span-2 flex flex-col gap-1">
+                <label className="text-white text-sm">Address*</label>
+                <input name="address" placeholder="Contact Address" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.address} onChange={handleChange} required />
+              </div>
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-white text-sm">Institution*</label>
+                <input name="institution" placeholder="Institution" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.institution} onChange={handleChange} required />
+              </div>
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-white text-sm">Nationality</label>
+                <select name="nationality" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" value={form.nationality} onChange={handleChange}>
+                  <option value="">Select Nationality</option>
+                  {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
             </div>
           )}
           {step === 2 && (
             <div className="flex flex-col gap-4">
-              <label className="text-white">Upload Passport Photo*</label>
-              <input name="photo" type="file" accept="image/*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none" onChange={handleChange} required />
+              <label className="text-white text-sm">Upload Passport Photo*</label>
+              <input name="photo" type="file" accept="image/*" className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-600 focus:outline-none focus:border-blue-500 text-sm" onChange={handleChange} required />
               {form.photo && (
                 <img src={form.photo ? URL.createObjectURL(form.photo) : ''} alt="Preview" className="w-32 h-32 object-cover rounded mx-auto mt-2" />
               )}
@@ -303,7 +358,7 @@ export default function SignupPage() {
           {step === 3 && (
             <div className="flex flex-col gap-4 items-center">
               <h3 className="text-xl text-white font-bold mb-2">Application Fee</h3>
-              <p className="text-gray-300 text-center mb-2">
+              <p className="text-gray-300 text-center mb-2 text-sm">
                 To complete your application, please pay <span className="font-bold text-green-400">₦21,000</span> to the WACCPS using Flutterwave.
               </p>
               <p className="text-gray-400 text-xs mt-2">
@@ -314,17 +369,17 @@ export default function SignupPage() {
           {step === 4 && (
             <div className="flex flex-col gap-4 items-center">
               <h3 className="text-xl text-green-500 font-bold mb-2">Registration Complete!</h3>
-              <p className="text-gray-300 text-center mb-2">Your payment was successful and your registration is now complete.</p>
+              <p className="text-gray-300 text-center mb-2 text-sm">Your payment was successful and your registration is now complete.</p>
               <p className="text-gray-400 text-sm mt-2">You will be redirected to your dashboard shortly.</p>
             </div>
           )}
           {(step === 1 || step === 2 || step === 3) && (
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-6 flex items-center justify-center" disabled={loading}>
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-4 flex items-center justify-center text-sm" disabled={loading}>
               {loading && <FaSpinner className="animate-spin mr-2" />}
-              {loading ? (step === 1 ? 'Registering...' : step === 2 ? 'Uploading...' : 'Processing Payment...') : (step === 1 ? 'Next: Upload Photo' : step === 2 ? 'Next: Payment' : 'Pay ₦21,000 Now To Finish Registration')}
+              {loading ? (step === 1 ? 'Registering...' : step === 2 ? 'Uploading...' : 'Processing Payment...') : (step === 1 ? 'Next: Upload Photo' : step === 2 ? 'Next: Payment' : 'Pay ₦21,000 Now')}
             </button>
           )}
-          <p className="mt-4 text-gray-400 text-sm text-center">
+          <p className="mt-4 text-gray-400 text-xs text-center">
             Already have an account? <a href="/login" className="text-blue-400 hover:underline">Login</a>
           </p>
         </form>

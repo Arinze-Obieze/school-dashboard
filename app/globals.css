@@ -5,3 +5,45 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
+/* Add to your globals.css */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+}
+
+.PhoneInputInput {
+  flex: 1;
+  background: #23272f;
+  color: white;
+  border: none;
+  outline: none;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.PhoneInputInput:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.PhoneInputCountry {
+  background: #23272f;
+  padding: 0.5rem 0.75rem;
+  border-right: 1px solid #4b5563;
+}
+
+.PhoneInputCountrySelect {
+  background: #23272f;
+  color: white;
+  border: none;
+  margin-right: 0.5rem;
+}
+
+.PhoneInputCountrySelectArrow {
+  border-top-color: white;
+}
+
+.PhoneInputCountryIcon {
+  border-radius: 2px;
+}
