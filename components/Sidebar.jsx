@@ -106,7 +106,7 @@ const menuItems = [
 ];
   
   const miscItems = [
-    { label: "User Settings", icon: <FaCog />, href: "/settings" },
+    // { label: "User Settings", icon: <FaCog />, href: "/settings" },
     { label: "Support", icon: <LuMessagesSquare />, href: "/support" },
     { label: "Logout", icon: <FaSignOutAlt />, href: "/logout" },
   ];

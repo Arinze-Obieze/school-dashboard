@@ -131,10 +131,10 @@ const ProfilePage = () => {
       toast.error('No profile data available');
       return;
     }
-
+  
     setDownloading(true);
     toast.info('Generating ID card...');
-
+  
     try {
       // Create a temporary ID card element
       const idCardElement = document.createElement('div');
@@ -147,15 +147,56 @@ const ProfilePage = () => {
       idCardElement.style.display = 'flex';
       idCardElement.style.flexDirection = 'column';
       idCardElement.style.position = 'absolute';
-      idCardElement.style.left = '-9999px'; // Move off-screen
+      idCardElement.style.left = '-9999px';
       idCardElement.style.fontFamily = 'Arial, sans-serif';
       idCardElement.style.overflow = 'hidden';
       idCardElement.style.border = '2px solid #4f46e5';
       
+      // Get absolute path for logo
+      const getLogoPath = () => {
+        // Use window.location to construct absolute path
+        const baseUrl = window.location.origin;
+        return `${baseUrl}/logo.jpg`;
+      };
+  
+      const logoPath = getLogoPath();
+  
+      // Function to load image with CORS handling
+      const loadImage = (src) => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+          
+          // Add cache busting to avoid cached images
+          if (src.startsWith('http')) {
+            img.src = src + '?t=' + new Date().getTime();
+          }
+        });
+      };
+  
+      // Pre-load logo to ensure it's available
+      let logoAvailable = false;
+      try {
+        await loadImage(logoPath);
+        logoAvailable = true;
+      } catch (error) {
+        console.warn('Logo not available, using fallback:', error);
+        logoAvailable = false;
+      }
+  
       // School header with logo
       const schoolHeader = `
         <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px; border-bottom: 2px solid #4f46e5; padding-bottom: 10px;">
-          <img src="/logo.jpg" alt="School Logo" style="width: 40px; height: 40px; margin-right: 10px; object-fit: contain;" />
+          ${
+            logoAvailable 
+              ? `<img src="${logoPath}" crossOrigin="anonymous" alt="School Logo" style="width: 40px; height: 40px; margin-right: 10px; object-fit: contain;" />`
+              : `<div style="width: 40px; height: 40px; background: #4f46e5; border-radius: 5px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                   <span style="color: white; font-weight: bold; font-size: 10px;">WACCPS</span>
+                 </div>`
+          }
           <div style="text-align: center;">
             <h3 style="margin: 0; color: #1f2937; font-size: 14px; font-weight: bold; line-height: 1.2;">
               WEST AFRICAN COLLEGE OF<br>CLINICAL PHYSIOLOGY SCIENCES
@@ -169,7 +210,7 @@ const ProfilePage = () => {
       const studentDetails = `
         <div style="display: flex; margin-bottom: 15px;">
           <div style="width: 80px; height: 80px; border-radius: 5px; overflow: hidden; margin-right: 15px; border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; background: #f9fafb;">
-            ${photo ? `<img src="${photo}" style="width: 100%; height: 100%; object-fit: cover;" alt="Student Photo" />` : 
+            ${photo ? `<img src="${photo}" crossOrigin="anonymous" style="width: 100%; height: 100%; object-fit: cover;" alt="Student Photo" />` : 
               `<div style="color: #9ca3af; font-size: 12px; text-align: center;">No Photo</div>`}
           </div>
           <div style="flex: 1;">
@@ -184,11 +225,7 @@ const ProfilePage = () => {
       // Footer with barcode and signature
       const cardFooter = `
         <div style="border-top: 1px solid #e5e7eb; padding-top: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
-          <div style="width: 80px; height: 40px; background: linear-gradient(90deg, #000 0%, #000 10%, transparent 10%, transparent 90%, #000 90%, #000 100%);
-            background-size: 10px 100%;
-            background-repeat: repeat-x;">
-            <!-- Barcode representation -->
-          </div>
+          <div style="width: 80px; height: 40px; background: repeating-linear-gradient(90deg, #000, #000 2px, transparent 2px, transparent 4px);"></div>
           <div style="text-align: center;">
             <div style="border-top: 1px solid #000; width: 80px; margin-bottom: 3px;"></div>
             <p style="margin: 0; color: #374151; font-size: 10px;">Authorized Signature</p>
@@ -201,32 +238,48 @@ const ProfilePage = () => {
       
       idCardElement.innerHTML = schoolHeader + studentDetails + cardFooter;
       document.body.appendChild(idCardElement);
-
-      // Wait for the image to load
-      await new Promise(resolve => {
-        const img = idCardElement.querySelector('img');
-        if (img && !img.complete) {
-          img.onload = resolve;
-          img.onerror = resolve;
-        } else {
-          setTimeout(resolve, 100);
+  
+      // Wait for all images to load
+      const images = idCardElement.getElementsByTagName('img');
+      const imageLoadPromises = [];
+      
+      for (let img of images) {
+        if (!img.complete) {
+          imageLoadPromises.push(new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve; // Continue even if image fails to load
+          }));
         }
-      });
-
-      // Convert to canvas then to image
+      }
+  
+      // Wait for images to load or timeout after 5 seconds
+      await Promise.race([
+        Promise.all(imageLoadPromises),
+        new Promise(resolve => setTimeout(resolve, 5000))
+      ]);
+  
+      // Convert to canvas with better configuration
       const canvas = await html2canvas(idCardElement, {
-        scale: 3, // Higher quality
+        scale: 3,
         logging: false,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          // Ensure CORS is set on cloned images too
+          const clonedImages = clonedDoc.querySelectorAll('img');
+          clonedImages.forEach(img => {
+            img.setAttribute('crossOrigin', 'anonymous');
+          });
+        }
       });
-
+  
       // Remove the temporary element
       document.body.removeChild(idCardElement);
-
+  
       // Create PDF
-      const imgData = canvas.toDataURL('image/png');
-      const pdfWidth = 85; // mm (standard ID card width)
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdfWidth = 85; // mm
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
       const pdf = new jsPDF({
@@ -234,10 +287,10 @@ const ProfilePage = () => {
         unit: 'mm',
         format: [pdfWidth, pdfHeight]
       });
-
+  
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`WACCPS-Student-ID-${user.uid.substring(0, 8)}.pdf`);
-
+      pdf.save(`WACCPS-Student-ID-${form.fullName.replace(/\s+/g, '-')}.pdf`);
+  
       toast.success('ID card downloaded successfully!');
     } catch (error) {
       console.error('Error generating ID card:', error);
