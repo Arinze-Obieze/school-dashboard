@@ -1,34 +1,35 @@
 'use client';
 import React from 'react';
 import { FaBookOpen, FaDollarSign, FaChartLine } from 'react-icons/fa';
-import { MdEventNote} from 'react-icons/md';
+import { MdEventNote } from 'react-icons/md';
 import Link from 'next/link';
 import Card from '@/components/Card';
-import Layout from '../layout';
 import Notifications from '@/components/Notifications';
-
+import { useCourse } from '@/context/CourseContext';
 
 const Dashboard = () => {
-  // Sample data
+  const { registeredCount, loading } = useCourse();
+
   const stats = [
-    { title: 'Courses Enrolled', value: 0, icon: <FaBookOpen className="text-blue-500 text-xl" />, bg: '#23272f', href: '/courses' },
+    { 
+      title: 'Courses Enrolled', 
+      value: loading ? '...' : registeredCount, 
+      icon: <FaBookOpen className="text-blue-500 text-xl" />, 
+      bg: '#23272f', 
+      href: '/courses' 
+    },
   ];
 
   const upcomingExams = [
-    {/*
-    { title: 'PSY501 - Psychopathology', date: '2025-07-05', time: '9:00 AM' hidden},
-    { title: 'PSY505 - Cognitive Behavioral Therapy', date: '2025-07-07', time: '2:00 PM' },
-    */}
+    // Your exam data...
   ];
 
-
-
   return (
-      <div className="p-6 space-y-6 bg-[#3e444d]">
+    <div className="p-6 space-y-6 bg-[#3e444d]">
       {/* Welcome Message */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-100">Welcome back 👋</h1>
-        <p className="text-gray-400 mt-1">Here’s what’s happening with your academic profile.</p>
+        <p className="text-gray-400 mt-1">Here's what's happening with your academic profile.</p>
       </div>
 
       {/* Quick Stats */}
@@ -63,7 +64,7 @@ const Dashboard = () => {
         </ul>
       </div>
 
-    <Notifications/>
+      <Notifications />
     </div>
   );
 };
