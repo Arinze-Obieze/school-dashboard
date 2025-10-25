@@ -57,9 +57,8 @@ const menuItems = [
 {
   label: "Exams / Result", icon: <FaBookReader />, href: "/exams",
   subItems: [
-      { label: "Exam Timetable", href: "/exams/timetable", icon: <FaCalendarAlt /> },
+      // { label: "Exam Timetable", href: "/exams/timetable", icon: <FaCalendarAlt /> },
       { label: "Take Online Exams", href: "/exams/online", icon: <FaLaptopCode /> },
-      { label: "Submit Exam Scripts", href: "/exams/submit", icon: <FaPaperPlane /> },
       { label: "View Results", href: "/exams/results", icon: <FaChartBar /> },
       // { label: "GPA / CGPA Tracker", href: "/exams/gpa-tracker", icon: <FaGraduationCap /> },
       { label: "Download Transcripts", href: "/exams/transcripts", icon: <FaFileDownload /> },
