@@ -49,6 +49,11 @@ export default function PrimaryRegistration() {
     // Career Intentions
     practiceAbroad: '',
     
+    // Attachments
+    degreeCertificate: null,
+    trainingCertificate: null,
+    passportPhotos: null,
+    
     // Declaration
     declarationChecked: false,
     declarationDate: '',
@@ -58,18 +63,17 @@ export default function PrimaryRegistration() {
   const [loading, setLoading] = useState(false);
   const [showAmountModal, setShowAmountModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
   const totalSteps = 5;
 
   const primaryExamData = {
     title: "Primary Examination Requirements (WACCPS)",
-    description: `The primary examination is the first step in the WACCPS's examination process. It assesses
-candidates' foundational knowledge in clinical physiology sciences.`,
+    description: `The primary examination is the first step in the WACCPS's examination process. It assesses candidates' foundational knowledge in clinical physiology sciences.`,
     borderColor: "blue-500",
     buttonColor: "blue-600",
-    textColor: "blue-300",    textColor: "blue-300",
-
+    textColor: "blue-300",
     eligibility: [
       "Relevant Degree: Candidates must hold a degree in a related field.",
       "Certified Training: Completion of a certified training program."
@@ -149,7 +153,8 @@ candidates' foundational knowledge in clinical physiology sciences.`,
       () => formData.practiceAbroad !== '',
       
       // Step 4: Attachments & Declaration
-      () =>  formData.declarationChecked
+      () => formData.degreeCertificate && formData.trainingCertificate && 
+            formData.passportPhotos && formData.declarationChecked && formData.declarationDate
     ];
     
     return validations[step] ? validations[step]() : true;
@@ -167,81 +172,6 @@ candidates' foundational knowledge in clinical physiology sciences.`,
     if (step > 0) setStep(step - 1);
   };
 
-  const handlePayment = async (docId) => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.flutterwave.com/v3.js';
-    script.async = true;
-    
-    script.onload = () => {
-      window.FlutterwaveCheckout({
-        public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-        tx_ref: `PRIMARY-${user.uid}-${Date.now()}`,
-        amount: 30000,
-        currency: 'NGN',
-        payment_options: 'card,banktransfer',
-        customer: {
-          email: formData.email,
-          name: `${formData.surname} ${formData.firstName}`,
-        },
-        customizations: {
-          title: 'WACCPS Primary Examination Fee',
-          description: 'Primary Registration Payment',
-          logo: '/logo.jpg',
-        },
-        callback: async (response) => {
-          if (response.status === 'successful') {
-            await updateRegistrationWithPayment(docId, response);
-            toast.success('Payment successful! Application updated.');
-          } else {
-            toast.error('Payment not completed.');
-          }
-        },
-      });
-    };
-    
-    document.body.appendChild(script);
-  };
-
-  const updateRegistrationWithPayment = async (docId, paymentResponse) => {
-    try {
-      await fetch('/api/verify-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          tx_ref: paymentResponse.tx_ref, 
-          userId: user.uid 
-        }),
-      });
-
-      await fetch('/api/save-primary-registration', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.uid,
-          docId,
-          paymentStatus: 'successful',
-          paymentRef: paymentResponse.tx_ref,
-          paymentResponse,
-        }),
-      });
-    } catch (error) {
-      console.error('Payment update failed:', error);
-    }
-  };
-
-  const submitForm = async (e) => {
-    e.preventDefault();
-    if (!isStepValid()) {
-      toast.error('Please complete all required fields before submitting.');
-      return;
-    }
-    if (!user?.uid) {
-      toast.error('You must be logged in to submit the form.');
-      return;
-    }
-    setShowAmountModal(true);
-  };
-
   const handleAmountSubmit = (amount) => {
     setShowAmountModal(false);
     setPaymentAmount(amount);
@@ -251,13 +181,32 @@ candidates' foundational knowledge in clinical physiology sciences.`,
   const proceedWithPayment = async (amount) => {
     setLoading(true);
     try {
+      // First create payment record
+      const paymentRes = await fetch('/api/payments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          amount: amount,
+          paymentType: 'primary',
+          txRef: `PRIMARY-${user.uid}-${Date.now()}`,
+          description: 'Primary Examination Registration Fee',
+          customerEmail: formData.email,
+          customerName: `${formData.surname} ${formData.firstName}`,
+        }),
+      });
+
+      if (!paymentRes.ok) throw new Error('Failed to create payment record');
+      const paymentData = await paymentRes.json();
+
+      // Then proceed with Flutterwave
       const script = document.createElement('script');
       script.src = 'https://checkout.flutterwave.com/v3.js';
       script.async = true;
       script.onload = () => {
         window.FlutterwaveCheckout({
           public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-          tx_ref: `PRIMARY-${user.uid}-${Date.now()}`,
+          tx_ref: paymentData.paymentData.txRef,
           amount: amount,
           currency: 'NGN',
           payment_options: 'card,banktransfer',
@@ -272,36 +221,69 @@ candidates' foundational knowledge in clinical physiology sciences.`,
           },
           callback: async (response) => {
             if (response.status === 'successful') {
-              try {
-                const res = await fetch('/api/save-primary-registration', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    userId: user.uid,
-                    ...formData,
-                    paymentStatus: 'successful',
-                    paymentRef: response.tx_ref,
-                    paymentAmount: amount,
-                  }),
-                });
-                if (!res.ok) throw new Error('Failed to save registration');
-                toast.success('Payment and registration successful!');
-                setShowSuccess(true);
-              } catch (err) {
-                toast.error('Payment succeeded but registration failed. Please contact support.');
+              // Verify payment
+              const verifyRes = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  transaction_id: response.transaction_id,
+                  tx_ref: response.tx_ref,
+                  userId: user.uid,
+                  paymentType: 'primary'
+                }),
+              });
+              
+              if (verifyRes.ok) {
+                setPaymentSuccess(true);
+                toast.success('Payment successful! Now complete your registration.');
+              } else {
+                toast.error('Payment verification failed.');
               }
             } else {
               toast.error('Payment not completed.');
             }
             setLoading(false);
           },
+          onclose: function() {
+            setLoading(false);
+          }
         });
       };
       document.body.appendChild(script);
     } catch (error) {
-      toast.error(error.message || 'Submission failed.');
+      toast.error(error.message || 'Payment failed.');
       setLoading(false);
     }
+  };
+
+  const submitForm = async (e) => {
+    e.preventDefault();
+    if (!isStepValid()) {
+      toast.error('Please complete all required fields before submitting.');
+      return;
+    }
+    if (!user?.uid) {
+      toast.error('You must be logged in to submit the form.');
+      return;
+    }
+    if (!paymentSuccess) {
+      setShowAmountModal(true);
+      return;
+    }
+    setLoading(true);
+    try {
+      // 1. Upload files to R2
+      const fileUrls = await uploadFiles();
+      
+      // 2. Save registration data
+      await saveRegistrationData(fileUrls);
+      
+      toast.success('Primary application submitted successfully!');
+      setShowSuccess(true);
+    } catch (err) {
+      toast.error(err.message || 'Submission failed.');
+    }
+    setLoading(false);
   };
 
   const uploadFiles = async () => {
@@ -310,7 +292,6 @@ candidates' foundational knowledge in clinical physiology sciences.`,
       'degreeCertificate',
       'trainingCertificate',
       'passportPhotos',
-      'feeReceipt',
     ];
 
     fileFields.forEach(field => {
@@ -324,10 +305,11 @@ candidates' foundational knowledge in clinical physiology sciences.`,
     });
 
     if (!res.ok) throw new Error('File upload failed');
-    return await res.json();
+    const data = await res.json();
+    return data.urls;
   };
 
-  const saveRegistration = async (fileUrls) => {
+  const saveRegistrationData = async (fileUrls) => {
     const res = await fetch('/api/save-primary-registration', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -335,6 +317,9 @@ candidates' foundational knowledge in clinical physiology sciences.`,
         userId: user.uid,
         ...formData,
         fileUrls,
+        paymentAmount: paymentAmount,
+        paymentStatus: 'successful',
+        submittedAt: new Date().toISOString(),
       }),
     });
 
@@ -348,9 +333,15 @@ candidates' foundational knowledge in clinical physiology sciences.`,
         isOpen={showAmountModal}
         onClose={() => setShowAmountModal(false)}
         onSubmit={handleAmountSubmit}
+        title="Primary Examination Fee"
+        description="Enter the amount for Primary Examination registration"
       />
+      
       {showSuccess ? (
-        <Success />
+        <Success 
+          title="Primary Application Submitted Successfully!"
+          message="Your Primary examination application has been received. You will be notified via email about the examination schedule."
+        />
       ) : (
         <div className="mx-auto lg:flex min-h-screen">
           <div className="lg:w-1/3 bg-gray-800 p-6">
@@ -393,6 +384,18 @@ candidates' foundational knowledge in clinical physiology sciences.`,
                     </div>
                   </div>
 
+                  {/* Payment Success Alert */}
+                  {paymentSuccess && (
+                    <div className="mb-6 p-4 bg-green-900/30 border border-green-700 rounded-lg">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-green-400 font-medium">Payment Successful! ₦{paymentAmount?.toLocaleString()} paid.</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Form Steps */}
                   {step === 0 && (
                     <StepPersonalDetails 
@@ -412,8 +415,8 @@ candidates' foundational knowledge in clinical physiology sciences.`,
                     <StepInstitutionDetails 
                       formData={formData} 
                       handleChange={handleChange}
-                      onCourseSelection={(e) => handleCourseSelection(e.target.value)}
-                      />
+                      onCourseSelection={handleCourseSelection}
+                    />
                   )}
                   
                   {step === 3 && (
@@ -428,6 +431,10 @@ candidates' foundational knowledge in clinical physiology sciences.`,
                       formData={formData} 
                       handleChange={handleChange} 
                       handleFileChange={handleFileChange} 
+                      declarationChecked={formData.declarationChecked}
+                      setDeclarationChecked={(checked) => setFormData(prev => ({ ...prev, declarationChecked: checked }))}
+                      declarationDate={formData.declarationDate}
+                      setDeclarationDate={(date) => setFormData(prev => ({ ...prev, declarationDate: date }))}
                     />
                   )}
 
@@ -453,9 +460,11 @@ candidates' foundational knowledge in clinical physiology sciences.`,
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Processing...
+                          {paymentSuccess ? 'Submitting...' : 'Processing Payment...'}
                         </>
-                      ) : 'Submit Primary Application & Pay'}
+                      ) : (
+                        paymentSuccess ? 'Submit Primary Application' : 'Proceed to Payment'
+                      )}
                     </button>
                   )}
                 </form>

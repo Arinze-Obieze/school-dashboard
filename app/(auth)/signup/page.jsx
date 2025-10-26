@@ -104,6 +104,8 @@ export default function SignupPage() {
         emailVerified: false,
         createdAt: new Date().toISOString(),
         paymentStatus: 'pending',
+        payments: [],
+        profileCompleted: false,
       }, { merge: true });
 
       nextStep();
@@ -121,7 +123,7 @@ export default function SignupPage() {
       if (isVerified) {
         nextStep();
       } else {
-        setError('Email not verified yet. Please check your inbox.');
+        setError('Email not verified yet. Please check your inbox and spam folder.');
       }
     } catch (err) {
       setError(err.message);
@@ -162,6 +164,7 @@ export default function SignupPage() {
         photoURL: uploadedPhotoURL,
         emailVerified: true,
         profileCompleted: true,
+        updatedAt: new Date().toISOString()
       }, { merge: true });
 
       console.log('Photo upload and profile update completed successfully');
@@ -173,25 +176,28 @@ export default function SignupPage() {
     setLoading(false);
   };
 
-  // Step 4: Handle payment
+  // Step 4: Handle payment with improved error handling
   const handleFlutterwavePayment = () => {
     if (!userId) {
       setError('User not found. Please complete previous steps.');
       return;
     }
+    
     setError("");
     setLoading(true);
 
     const triggerPayment = () => {
       if (typeof window.FlutterwaveCheckout === 'undefined') {
-        setError('Payment system is loading. Please try again in a moment.');
+        setError('Payment system is still loading. Please wait a moment and try again.');
         setLoading(false);
         return;
       }
 
+      const tx_ref = `${userId}-${Date.now()}`;
+      
       window.FlutterwaveCheckout({
         public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-        tx_ref: `${userId}-${Date.now()}`,
+        tx_ref: tx_ref,
         amount: 21000,
         currency: "NGN",
         payment_options: "banktransfer,card",
@@ -214,25 +220,27 @@ export default function SignupPage() {
               body: JSON.stringify({
                 tx_ref: response.tx_ref,
                 transaction_id: response.transaction_id,
-                userId,
+                userId: userId,
+                paymentType: "registration"
               }),
             });
+            
             const data = await res.json();
+            
+            if (!res.ok) {
+              throw new Error(data.error || 'Payment verification failed');
+            }
+            
             if (data.status === "success") {
-              await setDoc(doc(db, "users", userId), {
-                paymentStatus: "success",
-                paymentDate: new Date().toISOString(),
-                transactionId: response.transaction_id,
-                txRef: response.tx_ref,
-              }, { merge: true });
               setPaymentStatus("success");
               nextStep();
               setTimeout(() => router.push("/dashboard"), 3000);
             } else {
-              setError("Payment not completed.");
+              setError("Payment verification failed: " + (data.error || 'Unknown error'));
             }
           } catch (e) {
-            setError("Payment verification failed.");
+            console.error('Payment callback error:', e);
+            setError("Payment verification failed: " + e.message);
           } finally {
             setLoading(false);
           }
@@ -243,17 +251,32 @@ export default function SignupPage() {
       });
     };
 
-    // Check if Flutterwave script is loaded
-    if (!document.getElementById("flutterwave-script")) {
-      const script = document.createElement("script");
+    // Check if Flutterwave script is loaded with timeout
+    const scriptId = "flutterwave-script";
+    let script = document.getElementById(scriptId);
+    
+    if (!script) {
+      script = document.createElement("script");
       script.src = "https://checkout.flutterwave.com/v3.js";
-      script.id = "flutterwave-script";
+      script.id = scriptId;
       script.async = true;
-      script.onload = () => triggerPayment();
+      
+      const timeoutId = setTimeout(() => {
+        setError("Payment system timeout. Please refresh the page.");
+        setLoading(false);
+      }, 10000);
+      
+      script.onload = () => {
+        clearTimeout(timeoutId);
+        triggerPayment();
+      };
+      
       script.onerror = () => {
-        setError("Failed to load payment system. Please refresh the page.");
+        clearTimeout(timeoutId);
+        setError("Failed to load payment system. Please check your connection and refresh the page.");
         setLoading(false);
       };
+      
       document.body.appendChild(script);
     } else {
       triggerPayment();
@@ -292,7 +315,7 @@ export default function SignupPage() {
       case STEPS.PAYMENT:
         return <PaymentStep />;
       case STEPS.COMPLETE:
-        return <CompletionStep />;
+        return <CompletionStep paymentStatus={paymentStatus} />;
       default:
         return null;
     }
