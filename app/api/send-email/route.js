@@ -17,8 +17,8 @@ export async function POST(req) {
 
     const response = await client.sendMail({
       from: {
-        address: "waccps.org",
-        name: "WACCPS"
+        address: "admin@" + process.env.ZEPTOMAIL_SENDER_EMAIL,
+        name: "waccps"
       },
       to: [
         {

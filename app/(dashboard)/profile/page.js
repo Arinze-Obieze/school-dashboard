@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { db, storage } from "@/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { updateEmail, sendEmailVerification, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import { verifyBeforeUpdateEmail, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import html2canvas from 'html2canvas';
@@ -20,7 +20,9 @@ import {
   FaEnvelope,
   FaShieldAlt,
   FaExclamationTriangle,
-  FaLock
+  FaLock,
+  FaRedo,
+  FaHistory
 } from 'react-icons/fa';
 
 const ProfileInput = ({ label, name, value, onChange, disabled, type = "text", placeholder, verified = false }) => {
@@ -47,7 +49,6 @@ const ProfileInput = ({ label, name, value, onChange, disabled, type = "text", p
   );
 };
 
-// Password Modal Component
 const PasswordModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [password, setPassword] = useState('');
 
@@ -123,7 +124,6 @@ const ProfilePage = () => {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState('');
   
-  // Email verification states
   const [emailChanged, setEmailChanged] = useState(false);
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const [emailVerifying, setEmailVerifying] = useState(false);
@@ -131,9 +131,13 @@ const ProfilePage = () => {
   const [verificationChecked, setVerificationChecked] = useState(false);
   const [authEmailUpdated, setAuthEmailUpdated] = useState(false);
   
-  // Password modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordVerifying, setPasswordVerifying] = useState(false);
+
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendAttempts, setResendAttempts] = useState(0);
+  const [lastEmailSent, setLastEmailSent] = useState(null);
+  const [emailDeliveryStatus, setEmailDeliveryStatus] = useState('idle');
 
   useEffect(() => {
     if (!user) {
@@ -152,7 +156,7 @@ const ProfilePage = () => {
           setPhoto(data.photoURL || null);
           const formData = {
             fullName: `${data.surname || ''} ${data.firstname || ''} ${data.middlename || ''}`.trim(),
-            email: user.email || data.email || '', // Use auth email as source of truth
+            email: user.email || data.email || '',
             phone: data.mobile || '',
             address: data.address || ''
           };
@@ -174,34 +178,47 @@ const ProfilePage = () => {
     fetchProfile();
   }, [user]);
 
-  // Enhanced verification checker
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
   useEffect(() => {
     if (emailChanged && emailVerificationSent && authEmailUpdated) {
       console.log('Starting email verification checker...');
       
       const checkVerification = async () => {
         try {
+          if (!user) return false;
+          
           await user.reload();
           console.log('Email verification status:', user.emailVerified);
+          console.log('Current email:', user.email);
           
-          if (user.emailVerified) {
+          if (user.email === form.email && user.emailVerified) {
             setEmailVerifying(false);
             setSaveDisabled(false);
             setVerificationChecked(true);
-            toast.success('Email verified successfully! You can now save your profile.');
+            toast.success('Email verified and updated successfully! You can now save your profile.');
             return true;
           }
           return false;
         } catch (error) {
           console.error('Error checking verification:', error);
+          if (error.code === 'auth/user-token-expired') {
+            console.log('User token expired, stopping verification checker');
+            return true;
+          }
           return false;
         }
       };
 
-      // Check immediately first
       checkVerification();
       
-      // Then set up interval
       const interval = setInterval(async () => {
         const verified = await checkVerification();
         if (verified) {
@@ -211,27 +228,29 @@ const ProfilePage = () => {
 
       return () => clearInterval(interval);
     }
-  }, [emailChanged, emailVerificationSent, authEmailUpdated, user]);
+  }, [emailChanged, emailVerificationSent, authEmailUpdated, user, form.email]);
 
   const handleChange = e => {
     const { name, value } = e.target;
     const newForm = { ...form, [name]: value };
     setForm(newForm);
 
-    // Check if email was changed
     if (name === 'email' && value !== originalForm.email) {
       setEmailChanged(true);
       setSaveDisabled(true);
       setEmailVerificationSent(false);
       setVerificationChecked(false);
       setAuthEmailUpdated(false);
+      setResendAttempts(0);
+      setEmailDeliveryStatus('idle');
     }
   };
 
   const sendEmailChangeNotifications = async (oldEmail, newEmail, userName) => {
     try {
-      // Notification to old email
-      await fetch('/api/send-email', {
+      setEmailDeliveryStatus('sending');
+      
+      const oldEmailPromise = fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -251,8 +270,7 @@ const ProfilePage = () => {
         })
       });
 
-      // Welcome notification to new email
-      await fetch('/api/send-email', {
+      const newEmailPromise = fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -264,6 +282,7 @@ const ProfilePage = () => {
               <p>Dear ${userName},</p>
               <p>Your email address has been updated to this address for WACCPS.</p>
               <p>Please check your inbox for a verification email from Firebase and click the link to verify your new email address.</p>
+              <p><strong>Note:</strong> If you don't see the email, please check your spam folder.</p>
               <br>
               <p>Best regards,<br>WACCPS Team</p>
             </div>
@@ -271,8 +290,15 @@ const ProfilePage = () => {
           name: userName
         })
       });
+
+      await Promise.all([oldEmailPromise, newEmailPromise]);
+      setEmailDeliveryStatus('sent');
+      setLastEmailSent(new Date());
+      return true;
     } catch (error) {
       console.error('Error sending email notifications:', error);
+      setEmailDeliveryStatus('failed');
+      throw error;
     }
   };
 
@@ -308,28 +334,47 @@ const ProfilePage = () => {
 
   const updateEmailWithReauth = async (password) => {
     try {
-      // Reauthenticate user first
       const credential = EmailAuthProvider.credential(user.email, password);
       await reauthenticateWithCredential(user, credential);
       
-      // Now update the email
-      console.log('Updating Firebase Auth email to:', form.email);
-      await updateEmail(user, form.email);
+      console.log('Sending verification email to new address:', form.email);
+      await verifyBeforeUpdateEmail(user, form.email);
+      
+      setEmailVerificationSent(true);
       setAuthEmailUpdated(true);
       
-      // Send verification email to the NEW email address
-      await sendEmailVerification(user);
-      setEmailVerificationSent(true);
-      
-      // Send notifications to both old and new email addresses
       await sendEmailChangeNotifications(originalForm.email, form.email, form.fullName);
       
-      toast.success('Email updated! Verification sent to your new email address.');
+      toast.success('Verification email sent! Click the link in the email to complete the change.');
       setShowPasswordModal(false);
       return true;
     } catch (error) {
       console.error('Error in updateEmailWithReauth:', error);
       throw error;
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (resendCooldown > 0) return;
+    
+    setResendCooldown(60);
+    setResendAttempts(prev => prev + 1);
+    
+    try {
+      await verifyBeforeUpdateEmail(user, form.email);
+      
+      await sendEmailChangeNotifications(originalForm.email, form.email, form.fullName);
+      
+      toast.success('Verification email resent! Please check your inbox and spam folder.');
+    } catch (error) {
+      console.error('Error resending verification:', error);
+      
+      if (error.code === 'auth/requires-recent-login' || error.code === 'auth/user-token-expired') {
+        toast.info('For security, please verify your password to resend the email.');
+        setShowPasswordModal(true);
+      } else {
+        toast.error('Failed to resend verification email. Please try again.');
+      }
     }
   };
 
@@ -339,7 +384,6 @@ const ProfilePage = () => {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
       toast.error('Please enter a valid email address');
@@ -348,25 +392,24 @@ const ProfilePage = () => {
 
     setEmailVerifying(true);
     try {
-      // First try to update email without reauth (might work if recent login)
-      console.log('Attempting to update Firebase Auth email to:', form.email);
-      await updateEmail(user, form.email);
+      console.log('Sending verification email to new address:', form.email);
+      await verifyBeforeUpdateEmail(user, form.email);
+      
+      setEmailVerificationSent(true);
       setAuthEmailUpdated(true);
       
-      // Send verification email to the NEW email address
-      await sendEmailVerification(user);
-      setEmailVerificationSent(true);
-      
-      // Send notifications to both old and new email addresses
       await sendEmailChangeNotifications(originalForm.email, form.email, form.fullName);
       
-      toast.success('Email updated! Verification sent to your new email address.');
+      setResendAttempts(1);
+      setResendCooldown(60);
+      
+      toast.success('Verification email sent! Click the link in the email to complete the change.');
       
     } catch (error) {
-      console.error('Error updating email:', error);
+      console.error('Error sending verification:', error);
       
-      if (error.code === 'auth/requires-recent-login') {
-        // Show password modal for reauthentication
+      if (error.code === 'auth/requires-recent-login' || error.code === 'auth/user-token-expired') {
+        toast.info('For security, please verify your password to continue.');
         setShowPasswordModal(true);
       } else if (error.code === 'auth/email-already-in-use') {
         toast.error('This email is already in use by another account.');
@@ -378,7 +421,7 @@ const ProfilePage = () => {
       } else if (error.code === 'auth/network-request-failed') {
         toast.error('Network error. Please check your connection and try again.');
       } else {
-        toast.error(`Failed to update email: ${error.message}`);
+        toast.error(`Failed to send verification: ${error.message}`);
         setForm(prev => ({ ...prev, email: originalForm.email }));
         setEmailChanged(false);
         setSaveDisabled(false);
@@ -416,9 +459,27 @@ const ProfilePage = () => {
       return;
     }
 
-    if (emailChanged && !user.emailVerified) {
-      toast.error('Please verify your new email before saving');
+    const hasNonEmailChanges = 
+      form.phone !== originalForm.phone || 
+      form.address !== originalForm.address || 
+      form.fullName !== originalForm.fullName;
+
+    const hasEmailChange = form.email !== originalForm.email;
+
+    if (hasEmailChange && user && user.email !== form.email && !hasNonEmailChanges) {
+      toast.info('Starting email verification process...');
+      await handleSendVerification();
       return;
+    }
+
+    if (hasEmailChange && user && user.email !== form.email && hasNonEmailChanges) {
+      const shouldSaveAnyway = window.confirm(
+        'Your email change is not verified yet. Do you want to save the other changes now and verify email later?'
+      );
+      
+      if (!shouldSaveAnyway) {
+        return;
+      }
     }
 
     try {
@@ -431,32 +492,33 @@ const ProfilePage = () => {
         middlename: form.fullName.split(' ')[2] || ''
       };
 
-      // Only update email in Firestore if it was changed and verified in Auth
-      if (emailChanged && user.emailVerified) {
+      if (hasEmailChange && user && user.email === form.email) {
         updateData.email = form.email;
         console.log('Updating Firestore email to:', form.email);
       }
 
       await updateDoc(ref, updateData);
 
-      // Send profile change notification
       const changes = [];
       if (form.phone !== originalForm.phone) changes.push({ field: 'Phone', oldValue: originalForm.phone, newValue: form.phone });
       if (form.address !== originalForm.address) changes.push({ field: 'Address', oldValue: originalForm.address, newValue: form.address });
       if (form.fullName !== originalForm.fullName) changes.push({ field: 'Full Name', oldValue: originalForm.fullName, newValue: form.fullName });
-      if (emailChanged) changes.push({ field: 'Email', oldValue: originalForm.email, newValue: form.email });
+      if (hasEmailChange && user && user.email === form.email) changes.push({ field: 'Email', oldValue: originalForm.email, newValue: form.email });
       
       if (changes.length > 0) {
         await sendProfileChangeNotification(form.email, form.fullName, changes);
       }
 
-      // Reset states
       setEdit(false);
-      setEmailChanged(false);
-      setEmailVerificationSent(false);
-      setSaveDisabled(false);
-      setAuthEmailUpdated(false);
-      setOriginalForm(form);
+      if (hasEmailChange && user && user.email === form.email) {
+        setEmailChanged(false);
+        setEmailVerificationSent(false);
+        setSaveDisabled(false);
+        setAuthEmailUpdated(false);
+        setOriginalForm(form);
+      } else if (!hasEmailChange) {
+        setOriginalForm(form);
+      }
       
       toast.success('Profile updated successfully!');
     } catch (error) {
@@ -465,8 +527,20 @@ const ProfilePage = () => {
     }
   };
 
+  const handleSaveButtonClick = () => {
+    const hasNonEmailChanges = 
+      form.phone !== originalForm.phone || 
+      form.address !== originalForm.address || 
+      form.fullName !== originalForm.fullName;
+
+    if (saveDisabled && !hasNonEmailChanges) {
+      handleSendVerification();
+    } else {
+      handleSave();
+    }
+  };
+
   const handleCancelEdit = () => {
-    // Reset form to original values
     setForm(originalForm);
     setEdit(false);
     setEmailChanged(false);
@@ -475,6 +549,9 @@ const ProfilePage = () => {
     setVerificationChecked(false);
     setAuthEmailUpdated(false);
     setShowPasswordModal(false);
+    setResendAttempts(0);
+    setResendCooldown(0);
+    setEmailDeliveryStatus('idle');
     toast.info('Edit cancelled');
   };
 
@@ -637,7 +714,6 @@ const ProfilePage = () => {
     }
   };
 
-  // Upload to Firebase Storage
   const uploadToFirebaseStorage = async (file, userId) => {
     if (!file) return '';
     
@@ -656,21 +732,17 @@ const ProfilePage = () => {
     }
   };
 
-  // Delete from Firebase Storage
   const deleteFromFirebaseStorage = async (photoUrl) => {
     if (!photoUrl) return;
     
     try {
-      // Extract the path from the full URL
       const photoRef = ref(storage, photoUrl);
       await deleteObject(photoRef);
     } catch (error) {
       console.error('Error deleting photo from Firebase Storage:', error);
-      // Don't throw error for deletion failures
     }
   };
 
-  // Handle photo change with Firebase Storage
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file || !user) return;
@@ -679,15 +751,12 @@ const ProfilePage = () => {
     setPhotoError('');
     
     try {
-      // Delete old photo from Firebase Storage
       if (profile?.photoURL && profile.photoURL.includes('firebasestorage.googleapis.com')) {
         await deleteFromFirebaseStorage(profile.photoURL);
       }
       
-      // Upload new photo to Firebase Storage
       const newPhotoUrl = await uploadToFirebaseStorage(file, user.uid);
       
-      // Update Firestore
       const ref = doc(db, 'users', user.uid);
       await updateDoc(ref, { photoURL: newPhotoUrl });
       
@@ -701,6 +770,11 @@ const ProfilePage = () => {
     
     setPhotoUploading(false);
   };
+
+  const hasNonEmailChanges = 
+    form.phone !== originalForm.phone || 
+    form.address !== originalForm.address || 
+    form.fullName !== originalForm.fullName;
 
   if (loading) return (
     <div className="bg-gray-900 min-h-screen flex items-center justify-center">
@@ -726,7 +800,6 @@ const ProfilePage = () => {
       <div className="max-w-6xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
         <h1 className="text-2xl font-bold mb-6 text-center text-white">Profile</h1>
         
-        {/* Upload Passport Photo */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold mb-4 text-gray-200">Passport Photo</h2>
           <div className="flex flex-col items-center">
@@ -748,12 +821,10 @@ const ProfilePage = () => {
           </div>
         </section>
         
-        {/* View & Edit Personal Info */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold mb-4 text-gray-200">View & Edit Personal Info</h2>
           
-          {/* Email Verification Alert */}
-          {emailChanged && !user.emailVerified && (
+          {emailChanged && user && user.email !== form.email && (
             <div className="mb-4 p-4 bg-yellow-900/30 border border-yellow-700 rounded-lg">
               <div className="flex items-start">
                 <FaExclamationTriangle className="text-yellow-400 mt-1 mr-3 flex-shrink-0" />
@@ -764,41 +835,102 @@ const ProfilePage = () => {
                     {authEmailUpdated && (
                       <span className="block mt-1">
                         <strong>Check your inbox at {form.email} for the verification link.</strong>
+                        <br />
+                        <span className="text-yellow-200">Don't forget to check your spam folder!</span>
                       </span>
                     )}
                   </p>
-                  {!emailVerificationSent ? (
-                    <button
-                      onClick={handleSendVerification}
-                      disabled={emailVerifying}
-                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm flex items-center disabled:opacity-50"
-                    >
-                      {emailVerifying ? (
-                        <>
-                          <FaSpinner className="animate-spin mr-2" />
-                          Updating Email...
-                        </>
-                      ) : (
-                        <>
-                          <FaEnvelope className="mr-2" />
-                          Update Email & Send Verification
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex items-center text-green-400 text-sm">
-                        <FaCheck className="mr-2" />
-                        Verification email sent! Check your new email inbox.
-                      </div>
-                      {emailVerifying && (
-                        <div className="flex items-center text-blue-400 text-sm">
-                          <FaSpinner className="animate-spin mr-2" />
-                          Waiting for email verification...
-                        </div>
+                  
+                  {emailDeliveryStatus === 'sending' && (
+                    <div className="flex items-center text-blue-400 text-sm mb-2">
+                      <FaSpinner className="animate-spin mr-2" />
+                      Sending verification email...
+                    </div>
+                  )}
+                  
+                  {emailDeliveryStatus === 'sent' && (
+                    <div className="flex items-center text-green-400 text-sm mb-2">
+                      <FaCheck className="mr-2" />
+                      Verification email sent! Check your inbox.
+                      {lastEmailSent && (
+                        <span className="ml-2 text-yellow-300">
+                          (Last sent: {lastEmailSent.toLocaleTimeString()})
+                        </span>
                       )}
                     </div>
                   )}
+                  
+                  {emailDeliveryStatus === 'failed' && (
+                    <div className="flex items-center text-red-400 text-sm mb-2">
+                      <FaTimes className="mr-2" />
+                      Failed to send email. Please try again.
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {!emailVerificationSent ? (
+                      <button
+                        onClick={handleSendVerification}
+                        disabled={emailVerifying}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm flex items-center justify-center disabled:opacity-50"
+                      >
+                        {emailVerifying ? (
+                          <>
+                            <FaSpinner className="animate-spin mr-2" />
+                            Sending Verification...
+                          </>
+                        ) : (
+                          <>
+                            <FaEnvelope className="mr-2" />
+                            Send Verification Email
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center text-green-400 text-sm">
+                          <FaCheck className="mr-2" />
+                          Verification email sent! Check your new email inbox.
+                        </div>
+                        
+                        <button
+                          onClick={handleResendVerification}
+                          disabled={resendCooldown > 0 || emailVerifying}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm flex items-center disabled:opacity-50"
+                        >
+                          {resendCooldown > 0 ? (
+                            <>
+                              <FaHistory className="mr-2" />
+                              Resend available in {resendCooldown}s
+                            </>
+                          ) : (
+                            <>
+                              <FaRedo className="mr-2" />
+                              Resend Verification Email
+                              {resendAttempts > 0 && ` (${resendAttempts})`}
+                            </>
+                          )}
+                        </button>
+                        
+                        {emailVerifying && (
+                          <div className="flex items-center text-blue-400 text-sm">
+                            <FaSpinner className="animate-spin mr-2" />
+                            Waiting for email verification...
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-3 p-3 bg-yellow-800/30 rounded text-yellow-200 text-xs">
+                    <strong>Not receiving the email?</strong>
+                    <ul className="mt-1 list-disc list-inside space-y-1">
+                      <li>Check your spam or junk folder</li>
+                      <li>Add waccps.org to your email whitelist</li>
+                      <li>Ensure {form.email} is spelled correctly</li>
+                      <li>Wait a few minutes - emails can take 1-5 minutes to arrive</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -821,7 +953,7 @@ const ProfilePage = () => {
               onChange={handleChange}
               disabled={!edit}
               placeholder="Email"
-              verified={!emailChanged && user.emailVerified}
+              verified={!emailChanged && user && user.emailVerified}
             />
             <ProfileInput
               label="Phone"
@@ -846,13 +978,17 @@ const ProfilePage = () => {
               <>
                 <button 
                   className={`flex-1 px-6 py-3 text-white rounded-lg flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-transform ${
-                    saveDisabled ? 'bg-gray-600 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                    saveDisabled && !hasNonEmailChanges 
+                      ? 'bg-yellow-600 hover:bg-yellow-700' 
+                      : 'bg-green-600 hover:bg-green-700'
                   }`}
-                  onClick={handleSave}
-                  disabled={saveDisabled}
+                  onClick={handleSaveButtonClick}
                 >
                   <FaCheck className="h-5 w-5 mr-2" />
-                  {saveDisabled ? 'Verify Email to Save' : 'Save Changes'}
+                  {saveDisabled && !hasNonEmailChanges 
+                    ? 'Verify Email to Save' 
+                    : 'Save Changes'
+                  }
                 </button>
                 <button 
                   className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-transform"
@@ -874,7 +1010,6 @@ const ProfilePage = () => {
           </div>
         </section>
         
-        {/* Download Student ID Card */}
         <section>
           <h2 className="text-xl font-semibold mb-4 text-gray-200">Download Student ID Card</h2>
           <button 
