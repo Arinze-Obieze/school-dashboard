@@ -21,32 +21,21 @@ const examCards = [
     title: 'Take Online Exams',
     icon: <FaLaptopCode className="text-3xl" />,
     bg: '#e67e22',
-    href: '/exams/online'
+    href: 'https://cbt.waccps.org/'
   },
-  {
-    title: 'Submit Exam Scripts',
-    icon: <FaPaperPlane className="text-3xl" />,
-    bg: '#9b59b6',
-    href: '/exams/submit'
-  },
-  {
-    title: 'View Results',
-    icon: <FaChartBar className="text-3xl" />,
-    bg: '#3498db',
-    href: '/exams/results'
-  },
-  {
-    title: 'GPA / CGPA Tracker',
-    icon: <FaGraduationCap className="text-3xl" />,
-    bg: '#2ecc71',
-    href: '/exams/gpa-tracker'
-  },
-  {
-    title: 'Download Transcripts',
-    icon: <FaFileDownload className="text-3xl" />,
-    bg: '#e74c3c',
-    href: '/exams/transcripts'
-  }
+
+  // {
+  //   title: 'View Results',
+  //   icon: <FaChartBar className="text-3xl" />,
+  //   bg: '#3498db',
+  //   href: '/exams/results'
+  // },
+  // {
+  //   title: 'Download Transcripts',
+  //   icon: <FaFileDownload className="text-3xl" />,
+  //   bg: '#e74c3c',
+  //   href: '/exams/transcripts'
+  // }
 ]
 
 function Exams() {

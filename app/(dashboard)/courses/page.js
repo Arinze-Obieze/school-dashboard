@@ -45,24 +45,19 @@ function Courses() {
       href: '/courses/registered',
       count: registeredCount
     },
-    {
-      title: 'Course Materials',
-      icon: <FaCloudDownloadAlt className="text-3xl" />, 
-      bg: '#f5a623',
-      href: '/courses/materials'
-    },
+    // {
+    //   title: 'Course Materials',
+    //   icon: <FaCloudDownloadAlt className="text-3xl" />, 
+    //   bg: '#f5a623',
+    //   href: '/courses/materials'
+    // },
     // {
     //   title: 'Assignment Uploads',
     //   icon: <FaUpload className="text-3xl" />,
     //   bg: '#d0021b',
     //   href: '/courses/assignments'
     // },
-    {
-      title: 'Class Schedule / Timetable',
-      icon: <FaRegClock className="text-3xl" />, 
-      bg: '#9013fe',
-      href: '/courses/timetable'
-    }
+   
   ];
 
   return (

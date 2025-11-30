@@ -50,7 +50,7 @@ const menuItems = [
     subItems: [
       { label: "Register", href: "/courses/register", icon: <FaPlusCircle /> },
         { label: "Course Materials", href: "/courses/materials", icon: <FaCloudDownloadAlt /> },
-        { label: "Assignment Uploads", href: "/courses/assignments", icon: <FaUpload /> },
+        // { label: "Assignment Uploads", href: "/courses/assignments", icon: <FaUpload /> },
         // { label: "Class Schedule / Timetable", href: "/courses/timetable", icon: <FaRegClock /> },
     ]
 },
