@@ -63,9 +63,9 @@ const RegisteredCoursesPage = () => {
             programType: courseData.programType,
             registeredAt: courseData.registeredAt,
             status: courseData.status || 'registered',
-            description: courseDetails.description || 'No description available',
-            instructor: courseDetails.instructor || 'TBD',
-            duration: courseDetails.duration || 'TBD',
+            // description: courseDetails.description || 'No description available',
+            // instructor: courseDetails.instructor || 'TBD',
+            // duration: courseDetails.duration || 'TBD',
           };
         });
 
@@ -222,21 +222,21 @@ const RegisteredCoursesPage = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-start">
+                      {/* <div className="flex items-start">
                         <FiUser className="mr-2 text-gray-500 flex-shrink-0 mt-1" />
                         <div className="flex-1">
                           <p className="text-gray-400 text-xs">Instructor</p>
                           <p className="text-sm">{course.instructor}</p>
                         </div>
-                      </div>
+                      </div> */}
 
-                      <div className="flex items-start">
+                      {/* <div className="flex items-start">
                         <FiBook className="mr-2 text-gray-500 flex-shrink-0 mt-1" />
                         <div className="flex-1">
                           <p className="text-gray-400 text-xs">Duration</p>
                           <p className="text-sm">{course.duration}</p>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
 
                     {/* Status Badge */}
