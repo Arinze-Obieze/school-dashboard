@@ -60,7 +60,7 @@ const menuItems = [
   subItems: [
       // { label: "Exam Timetable", href: "/exams/timetable", icon: <FaCalendarAlt /> },
       { label: "Take Online Exams", href: "/exams/online", icon: <FaLaptopCode /> },
-      { label: "View Results", href: "/exams/results", icon: <FaChartBar /> },
+      { label: "View History/Results", href: "/exams/history", icon: <FaChartBar /> },
       // { label: "GPA / CGPA Tracker", href: "/exams/gpa-tracker", icon: <FaGraduationCap /> },
       { label: "Download Transcripts", href: "/exams/transcripts", icon: <FaFileDownload /> },
   ]
@@ -88,7 +88,7 @@ const menuItems = [
   label: "Resources", icon: <FaBook />, href: "/resources",
   subItems: [
       { label: "eLibrary", href: "/resources/elibrary", icon: <FaBook /> },
-      { label: "Lecture Notes", href: "/resources/notes", icon: <FaFileAlt /> },
+      // { label: "Lecture Notes", href: "/resources/notes", icon: <FaFileAlt /> },
       { label: "Videos & Tutorials", href: "/resources/videos", icon: <FaVideo /> },
       // { label: "Study Groups / Forums", href: "/resources/groups", icon: <FaUsers /> },
   ]

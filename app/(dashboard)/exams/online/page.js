@@ -121,3 +121,4 @@ const ExamRedirectPage = () => {
 };
 
 export default ExamRedirectPage;
+

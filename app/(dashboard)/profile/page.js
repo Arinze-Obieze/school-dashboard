@@ -174,7 +174,7 @@ const ProfilePage = () => {
         setLoading(false);
       }
     };
-    console.log('Current user:', user);
+    // console.log('Current user:', user);
     fetchProfile();
   }, [user]);
 
