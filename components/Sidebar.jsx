@@ -67,11 +67,11 @@ const menuItems = [
 {
   label: "Payments", icon: <MdOutlinePayments />, href: "/payments",
   subItems: [
-      { label: "Fee Breakdown", href: "/payment/fee-breakdown", icon: <FaListAlt /> },
-      { label: "Pay Online", href: "/payment/pay", icon: <FaCreditCard /> },
+      // { label: "Fee Breakdown", href: "/payment/fee-breakdown", icon: <FaListAlt /> },
+      // { label: "Pay Online", href: "/payment/pay", icon: <FaCreditCard /> },
       { label: "View Payment History", href: "/payment/history", icon: <FaHistory /> },
-      { label: "Download Payment Receipts", href: "/payment/receipts", icon: <FaDownload /> },
-      { label: "Print Invoice", href: "/payment/invoice", icon: <FaPrint /> },
+      // { label: "Download Payment Receipts", href: "/payment/receipts", icon: <FaDownload /> },
+      // { label: "Print Invoice", href: "/payment/invoice", icon: <FaPrint /> },
   ]
 },
 // {
@@ -106,7 +106,7 @@ const menuItems = [
   
   const miscItems = [
     // { label: "User Settings", icon: <FaCog />, href: "/settings" },
-    { label: "Support", icon: <LuMessagesSquare />, href: "/support" },
+    // { label: "Support", icon: <LuMessagesSquare />, href: "/support" },
     { label: "Logout", icon: <FaSignOutAlt />, href: "/logout" },
   ];
 

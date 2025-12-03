@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Allow users to read/write their own profile
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+
+      // ✅ Superadmin: full access to all users
+      allow read, create, update, delete: if request.auth.token.role == "superadmin";
+    }
+
+    // ✅ Notification collection
+    match /notifications/{notifId} {
+      // Superadmin: full access
+      allow read, write: if request.auth.token.role == "superadmin";
+
+      // Authenticated users: read only
+      allow read: if request.auth != null;
+    }
+    
+    // ✅ Courses collection
+    match /courses/{courseId} {
+      // Everyone (authenticated) can read courses
+      allow read: if request.auth != null;
+
+      // Superadmin can create, update, delete any course
+      allow create, update, delete: if request.auth.token.role == "superadmin";
+
+      // ✅ Students subcollection under each course
+      match /students/{studentId} {
+        // Allow authenticated user to add/update their own document
+        allow create, update: if request.auth != null && request.auth.uid == studentId;
+
+        // Optional: Allow users to read their own student doc
+        allow read: if request.auth != null && request.auth.uid == studentId;
+
+        // Optional: Allow superadmin full access
+        allow read, write: if request.auth.token.role == "superadmin";
+      }
+    }
+    
+    // ✅ Payments collection (flat structure)
+    match /payments/{paymentId} {
+      // Allow users to create their own payment records
+      allow create: if request.auth != null && 
+                    request.auth.uid == request.resource.data.userId;
+      
+      // Allow users to read their own payments
+      allow read: if request.auth != null && 
+                  request.auth.uid == resource.data.userId;
+      
+      // Allow users to update only specific fields of their own payments
+      allow update: if request.auth != null && 
+                    request.auth.uid == resource.data.userId &&
+                    request.resource.data.keys().hasAll(["status", "transactionId", "flutterwaveResponse", "paymentDate", "updatedAt"]);
+      
+      // Superadmin: full access
+      allow read, write: if request.auth.token.role == "superadmin";
+    }
+
+    // ✅ Enrollments collection
+    match /enrollments/{userId} {
+      // Allow users to create their own enrollment document
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow users to update their own enrollment document (for adding new courses)
+      allow update: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow users to read their own enrollment document
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Superadmin: full access to all enrollments
+      allow read, write: if request.auth.token.role == "superadmin";
+    }
+
+    // ❌ Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
