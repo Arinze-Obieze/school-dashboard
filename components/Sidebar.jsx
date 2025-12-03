@@ -28,7 +28,8 @@ import {
   FaVideo,
   FaUsers,
 
-  FaFileAlt
+  FaFileAlt,
+  FaRegClock
 } from 'react-icons/fa';
 import { LuMessagesSquare } from 'react-icons/lu';
 import { MdOutlinePayments } from 'react-icons/md';
@@ -49,9 +50,9 @@ const menuItems = [
     label: "Courses", icon: <FaGraduationCap />, href: "/courses",
     subItems: [
       { label: "Register", href: "/courses/register", icon: <FaPlusCircle /> },
-        { label: "Course Materials", href: "/courses/materials", icon: <FaCloudDownloadAlt /> },
+        // { label: "Course Materials", href: "/courses/materials", icon: <FaCloudDownloadAlt /> },
         // { label: "Assignment Uploads", href: "/courses/assignments", icon: <FaUpload /> },
-        // { label: "Class Schedule / Timetable", href: "/courses/timetable", icon: <FaRegClock /> },
+        { label: "Registered", href: "/courses/registered", icon: <FaRegClock /> },
     ]
 },
 {
@@ -69,7 +70,7 @@ const menuItems = [
   subItems: [
       // { label: "Fee Breakdown", href: "/payment/fee-breakdown", icon: <FaListAlt /> },
       // { label: "Pay Online", href: "/payment/pay", icon: <FaCreditCard /> },
-      { label: "View Payment History", href: "/payment/history", icon: <FaHistory /> },
+      { label: "View Payment History", href: "/payments/history", icon: <FaHistory /> },
       // { label: "Download Payment Receipts", href: "/payment/receipts", icon: <FaDownload /> },
       // { label: "Print Invoice", href: "/payment/invoice", icon: <FaPrint /> },
   ]
@@ -89,7 +90,7 @@ const menuItems = [
       { label: "eLibrary", href: "/resources/elibrary", icon: <FaBook /> },
       { label: "Lecture Notes", href: "/resources/notes", icon: <FaFileAlt /> },
       { label: "Videos & Tutorials", href: "/resources/videos", icon: <FaVideo /> },
-      { label: "Study Groups / Forums", href: "/resources/groups", icon: <FaUsers /> },
+      // { label: "Study Groups / Forums", href: "/resources/groups", icon: <FaUsers /> },
   ]
 },
     {

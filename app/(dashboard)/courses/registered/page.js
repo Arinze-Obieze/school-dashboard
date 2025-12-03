@@ -147,22 +147,9 @@ const RegisteredCoursesPage = () => {
         {/* User Profile Section */}
         {userProfile && (
           <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700">
-            <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
+            <h2 className="text-lg font-semibold mb-4">Registered Course Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center">
-                <FiUser className="mr-3 text-blue-400 flex-shrink-0" />
-                <div>
-                  <p className="text-gray-400 text-sm">Name</p>
-                  <p className="font-semibold">{`${userProfile.surname || ''} ${userProfile.firstname || ''} ${userProfile.middlename || ''}`.trim() || 'Not specified'}</p>
-                </div>
-              </div>
-              <div className="flex items-center">
-                <FiMail className="mr-3 text-blue-400 flex-shrink-0" />
-                <div>
-                  <p className="text-gray-400 text-sm">Email</p>
-                  <p className="font-semibold">{userProfile.email || 'Not specified'}</p>
-                </div>
-              </div>
+          
               <div className="flex items-center">
                 <FiBook className="mr-3 text-blue-400 flex-shrink-0" />
                 <div>

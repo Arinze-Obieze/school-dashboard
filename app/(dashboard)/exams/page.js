@@ -21,7 +21,7 @@ const examCards = [
     title: 'Take Online Exams',
     icon: <FaLaptopCode className="text-3xl" />,
     bg: '#e67e22',
-    href: 'https://cbt.waccps.org/'
+    href: '/exams/online'
   },
 
   // {
