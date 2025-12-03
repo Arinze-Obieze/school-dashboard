@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["http://localhost:3001", "https://dashboard.waccps.org"],
+    "method": ["GET"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]
