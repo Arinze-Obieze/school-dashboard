@@ -18,7 +18,7 @@ console.log('Length:', process.env.WACCPS_API_KEY?.length);
     const res = await fetch(apiUrl, {
       method: 'GET',
     headers: {
-  'Authentication-Key': process.env.WACCPS_API_KEY.trim(),
+  'authentication-key': process.env.WACCPS_API_KEY
 } 
    });
 

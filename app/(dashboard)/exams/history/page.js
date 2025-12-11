@@ -375,11 +375,9 @@ const ExamPortalPage = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-2">
-                Exam Portal
+                Exam History
               </h1>
-              <p className="text-gray-300 text-sm">
-                {user ? `Welcome, ${user.displayName || user.email?.split('@')[0] || 'Student'}` : 'Manage your exams'}
-              </p>
+       
             </div>
             
             <div className="flex items-center gap-4">
