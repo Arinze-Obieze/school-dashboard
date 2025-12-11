@@ -14,7 +14,8 @@ import {
   FaPlayCircle,
   FaListOl,
   FaHourglassHalf,
-  FaUserGraduate
+  FaUserGraduate,
+  FaSync
 } from 'react-icons/fa';
 import { 
   MdLaptop, 
@@ -37,6 +38,37 @@ const ExamPortalPage = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [user, setUser] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Helper functions for dynamic classes
+  const getTabIconColor = (color) => {
+    switch(color) {
+      case 'blue': return 'text-blue-400';
+      case 'green': return 'text-green-400';
+      case 'yellow': return 'text-yellow-400';
+      case 'gray': return 'text-gray-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getTabBadgeClasses = (color) => {
+    switch(color) {
+      case 'blue': return 'bg-blue-500/20 text-blue-300';
+      case 'green': return 'bg-green-500/20 text-green-300';
+      case 'yellow': return 'bg-yellow-500/20 text-yellow-300';
+      case 'gray': return 'bg-gray-500/20 text-gray-300';
+      default: return 'bg-gray-500/20 text-gray-300';
+    }
+  };
+
+  const getTabBorderColor = (color) => {
+    switch(color) {
+      case 'blue': return 'border-blue-500';
+      case 'green': return 'border-green-500';
+      case 'yellow': return 'border-yellow-500';
+      case 'gray': return 'border-gray-500';
+      default: return 'border-gray-500';
+    }
+  };
 
   // Update current time every minute
   useEffect(() => {
@@ -62,6 +94,8 @@ const ExamPortalPage = () => {
 
   const getExamStatus = (exam) => {
     const now = currentTime;
+    
+    // Create dates in local timezone
     const examStart = new Date(`${exam.date}T${exam.time_range_start}`);
     const examEnd = new Date(`${exam.date}T${exam.time_range_end}`);
     
@@ -70,13 +104,18 @@ const ExamPortalPage = () => {
       return exam.completed === 1 ? 'completed' : 'in-progress';
     }
     
+    // Add buffer time (15 minutes before/after)
+    const bufferMs = 15 * 60 * 1000; // 15 minutes in milliseconds
+    
     // Determine status based on current time
-    if (now < examStart) {
+    if (now < (examStart - bufferMs)) {
       return 'upcoming';
-    } else if (now >= examStart && now <= examEnd) {
-      return 'active'; // Exam is currently happening
+    } else if (now >= (examStart - bufferMs) && now <= examEnd) {
+      return 'active'; // Exam is currently happening or about to start
+    } else if (now > examEnd && now <= (examEnd + bufferMs)) {
+      return 'active'; // Grace period after exam ends
     } else if (now > examEnd) {
-      return 'past'; // Exam time has passed
+      return 'past';
     }
     
     return 'unknown';
@@ -87,28 +126,25 @@ const ExamPortalPage = () => {
     setError(null);
     
     try {
-      // First, try your local API route (recommended for production)
-      const response = await fetch(
-        `/api/exams?studentId=${studentId}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          cache: 'no-store'
-        }
-      );
+      const response = await fetch(`/api/exams?studentId=${studentId}`, {
+      });
 
       if (!response.ok) {
-        // Fallback to direct API call for development (will have CORS issues)
-        console.warn('API route failed, trying direct API call...');
-        throw new Error('API route failed');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API returned ${response.status}`);
       }
 
       const data = await response.json();
       
+      // Handle empty or invalid response
+      if (!Array.isArray(data)) {
+        console.warn('API returned non-array data:', data);
+        setExams([]);
+        return;
+      }
+      
       // Transform and add calculated status
-      const transformedExams = Array.isArray(data) ? data.map((exam, index) => ({
+      const transformedExams = data.map((exam, index) => ({
         id: exam.quiz_id?.toString() || `exam-${index}`,
         exam_id: exam.quiz_id,
         title: exam.title || 'Untitled Exam',
@@ -136,16 +172,13 @@ const ExamPortalPage = () => {
           started: exam.started,
           completed: exam.completed
         })
-      })) : [];
+      }));
       
       setExams(transformedExams);
       
     } catch (err) {
       console.error('Error fetching exams:', err);
       setError(`Unable to load exams: ${err.message}`);
-      
-      // For development, you can use mock data
-      // setExams(getMockExams());
     } finally {
       setLoading(false);
     }
@@ -242,8 +275,6 @@ const ExamPortalPage = () => {
   };
 
   const getStatusBadge = (status) => {
-    const now = new Date();
-    
     switch(status) {
       case 'upcoming':
         return (
@@ -311,18 +342,18 @@ const ExamPortalPage = () => {
     
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     
     if (diffDays > 0) {
       return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
     } else if (diffHours > 0) {
       return `In ${diffHours} hour${diffHours > 1 ? 's' : ''}`;
     } else {
-      const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       return `In ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
     }
   };
 
-  if (loading) {
+  if (loading && exams.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
         <div className="text-center">
@@ -351,14 +382,26 @@ const ExamPortalPage = () => {
               </p>
             </div>
             
-            {exams.length > 0 && (
-              <div className="bg-gray-800/50 rounded-lg px-4 py-2 border border-gray-700">
-                <p className="text-sm text-gray-400">Current Time</p>
-                <p className="text-xl font-bold text-white">
-                  {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            )}
+            <div className="flex items-center gap-4">
+              {exams.length > 0 && (
+                <div className="bg-gray-800/50 rounded-lg px-4 py-2 border border-gray-700">
+                  <p className="text-sm text-gray-400">Current Time</p>
+                  <p className="text-xl font-bold text-white">
+                    {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              )}
+              
+              <button
+                onClick={() => user && fetchExams(user.uid)}
+                disabled={loading}
+                className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-300 hover:text-white px-4 py-2 rounded-lg transition-colors"
+                title="Refresh exams"
+              >
+                <FaSync className={loading ? 'animate-spin' : ''} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
+            </div>
           </div>
 
           {/* Stats Bar */}
@@ -407,13 +450,13 @@ const ExamPortalPage = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center px-4 py-3 text-sm sm:text-base rounded-t-lg transition-all duration-200 ${
                 activeTab === tab.id
-                  ? `bg-gray-800 text-white border-b-2 border-${tab.color}-500`
+                  ? `bg-gray-800 text-white border-b-2 ${getTabBorderColor(tab.color)}`
                   : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
               }`}
             >
-              <tab.icon className={`mr-2 text-${tab.color}-400`} />
+              <tab.icon className={`mr-2 ${getTabIconColor(tab.color)}`} />
               {tab.label}
-              <span className={`ml-2 bg-${tab.color}-500/20 text-${tab.color}-300 text-xs px-2 py-0.5 rounded-full`}>
+              <span className={`ml-2 ${getTabBadgeClasses(tab.color)} text-xs px-2 py-0.5 rounded-full`}>
                 {tab.count}
               </span>
             </button>

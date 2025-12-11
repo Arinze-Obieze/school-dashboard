@@ -90,7 +90,7 @@ const menuItems = [
       // { label: "eLibrary", href: "/resources/elibrary", icon: <FaBook /> },
       // { label: "Lecture Notes", href: "/resources/notes", icon: <FaFileAlt /> },
       { label: "Videos & Tutorials", href: "/resources/videos", icon: <FaVideo /> },
-      // { label: "Study Groups / Forums", href: "/resources/groups", icon: <FaUsers /> },
+      { label: "Study Groups / Forums", href: "/resources/groups", icon: <FaUsers /> },
   ]
 },
     {

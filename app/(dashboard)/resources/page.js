@@ -27,12 +27,12 @@ const resourceCards = [
     bg: '#e67e22',
     href: '/resources/videos'
   },
-  // {
-  //   title: 'Study Groups / Forums',
-  //   icon: <FaUsers className="text-3xl" />,
-  //   bg: '#9b59b6',
-  //   href: '/resources/groups'
-  // }
+  {
+    title: 'Study Groups / Forums',
+    icon: <FaUsers className="text-3xl" />,
+    bg: '#9b59b6',
+    href: '/resources/groups'
+  }
 ]
 
 function Resources() {
