@@ -60,7 +60,7 @@ const menuItems = [
   subItems: [
       // { label: "Exam Timetable", href: "/exams/timetable", icon: <FaCalendarAlt /> },
       { label: "Take Online Exams", href: "/exams/online", icon: <FaLaptopCode /> },
-      { label: "View History/Results", href: "/exams/history", icon: <FaChartBar /> },
+      { label: "View Upcoming / past exam", href: "/exams/history", icon: <FaChartBar /> },
       // { label: "GPA / CGPA Tracker", href: "/exams/gpa-tracker", icon: <FaGraduationCap /> },
       { label: "Download Transcripts", href: "/exams/transcripts", icon: <FaFileDownload /> },
   ]
