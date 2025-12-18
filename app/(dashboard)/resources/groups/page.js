@@ -17,28 +17,28 @@ const StudyForum = () => {
     {
       name: "Study Forum",
       description: "Community discussion forum where everyone can post and discuss",
-      link: "https://t.me/+PCipfdvooeY0NmM0",
+      link: "https://t.me/officialwaccpsforum",
       type: "forum",
       icon: <FaComments />,
       stats: [
         { label: 'Active Members', value: '500+', icon: <FaUsers /> },
         { label: 'Daily Messages', value: '50+', icon: <FaCommentDots /> }
       ],
-      gradient: "from-blue-200 to-teal-200",
+      gradient: "from-p-100 to-gray-1500",
       buttonColor: "bg-white text-blue-600 hover:bg-gray-100",
     },
     {
       name: "Official Channel",
       description: "Official announcements, study materials, and important updates",
-      link: "https://t.me/officialwaccpsforum",
+      link: "https://t.me/+PCipfdvooeY0NmM0 ",
       type: "channel",
       icon: <FaBullhorn />,
       stats: [
         { label: 'Subscribers', value: '200+', icon: <MdGroup /> },
         { label: 'Resources Shared', value: '50+', icon: <MdLibraryBooks /> }
       ],
-      gradient: "from-purple-500 to-pink-500",
-      buttonColor: "bg-white text-blue-600 hover:bg-gray-100",
+      gradient: "from-p-100 to-gray-1500",
+      buttonColor: "bg-white text-purple-600 hover:bg-gray-100",
     }
   ];
 
