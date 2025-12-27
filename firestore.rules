@@ -18,6 +18,15 @@ service cloud.firestore {
 
       // Authenticated users: read only
       allow read: if request.auth != null;
+
+      // User read status subcollection - allows each user to track their own read status
+      match /readBy/{userId} {
+        // Allow authenticated user to create/update/read their own read status
+        allow create, update, read: if request.auth != null && request.auth.uid == userId;
+
+        // Superadmin: full access
+        allow read, write: if request.auth.token.role == "superadmin";
+      }
     }
     
     // ✅ Courses collection

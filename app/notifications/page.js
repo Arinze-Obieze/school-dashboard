@@ -1,12 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, orderBy, updateDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
+import { toast } from 'react-toastify';
 import { MdNotificationsActive, MdClose, FiArrowLeft } from 'react-icons/md';
 import { FiArrowLeft as FiArrowLeftIcon, FiSearch, FiFilter, FiCheckCircle, FiCircle } from 'react-icons/fi';
 
 const NotificationsPage = () => {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,8 +18,12 @@ const NotificationsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedNotifications, setSelectedNotifications] = useState(new Set());
+  const [userReadStatus, setUserReadStatus] = useState(new Map()); // Track which notifications user has read
 
+  // Fetch notifications
   useEffect(() => {
+    if (!user) return;
+
     const q = query(
       collection(db, 'notifications'),
       orderBy('createdAt', 'desc')
@@ -31,6 +38,28 @@ const NotificationsPage = () => {
         }));
         setNotifications(data);
         setLoading(false);
+
+        // Fetch read status for each notification
+        data.forEach((notification) => {
+          const readStatusRef = doc(db, 'notifications', notification.id, 'readBy', user.uid);
+          onSnapshot(
+            readStatusRef,
+            (readDoc) => {
+              setUserReadStatus((prev) => {
+                const updated = new Map(prev);
+                if (readDoc.exists()) {
+                  updated.set(notification.id, true);
+                } else {
+                  updated.delete(notification.id);
+                }
+                return updated;
+              });
+            },
+            () => {
+              // Silently handle errors
+            }
+          );
+        });
       },
       (error) => {
         console.error('Error fetching notifications:', error);
@@ -39,7 +68,7 @@ const NotificationsPage = () => {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   // Filter and search notifications
   useEffect(() => {
@@ -53,14 +82,19 @@ const NotificationsPage = () => {
       );
     }
 
-    // Status filter
+    // Status filter - check user's read status, not global status
     if (filterStatus !== 'all') {
-      filtered = filtered.filter(notification => notification.status === filterStatus);
+      filtered = filtered.filter(notification => {
+        const isRead = userReadStatus.has(notification.id);
+        if (filterStatus === 'read') return isRead;
+        if (filterStatus === 'sent') return !isRead;
+        return true;
+      });
     }
 
     setFilteredNotifications(filtered);
     setCurrentPage(1);
-  }, [searchQuery, filterStatus, notifications]);
+  }, [searchQuery, filterStatus, notifications, userReadStatus]);
 
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -97,13 +131,18 @@ const NotificationsPage = () => {
   };
 
   const markAsRead = async (notificationId) => {
+    if (!user) return;
+
     try {
-      const notificationRef = doc(db, 'notifications', notificationId);
-      await updateDoc(notificationRef, {
-        status: 'read'
+      const readStatusRef = doc(db, 'notifications', notificationId, 'readBy', user.uid);
+      await setDoc(readStatusRef, {
+        readAt: new Date(),
+        userId: user.uid
       });
+      toast.success('Notification marked as read');
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      toast.error('Failed to mark notification as read');
     }
   };
 
@@ -127,16 +166,21 @@ const NotificationsPage = () => {
   };
 
   const markSelectedAsRead = async () => {
+    if (!user) return;
+
     try {
       for (const notificationId of selectedNotifications) {
-        const notificationRef = doc(db, 'notifications', notificationId);
-        await updateDoc(notificationRef, {
-          status: 'read'
+        const readStatusRef = doc(db, 'notifications', notificationId, 'readBy', user.uid);
+        await setDoc(readStatusRef, {
+          readAt: new Date(),
+          userId: user.uid
         });
       }
       setSelectedNotifications(new Set());
+      toast.success('Selected notifications marked as read');
     } catch (error) {
       console.error('Error marking notifications as read:', error);
+      toast.error('Failed to mark notifications as read');
     }
   };
 
@@ -203,13 +247,13 @@ const NotificationsPage = () => {
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <p className="text-gray-400 text-sm">Unread</p>
             <p className="text-2xl font-bold text-orange-400 mt-1">
-              {notifications.filter(n => n.status === 'sent').length}
+              {notifications.filter(n => !userReadStatus.has(n.id)).length}
             </p>
           </div>
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <p className="text-gray-400 text-sm">Read</p>
             <p className="text-2xl font-bold text-green-400 mt-1">
-              {notifications.filter(n => n.status === 'read').length}
+              {notifications.filter(n => userReadStatus.has(n.id)).length}
             </p>
           </div>
         </div>
@@ -289,12 +333,12 @@ const NotificationsPage = () => {
                 <div
                   key={notification.id}
                   onClick={() => {
-                    if (notification.status === 'sent') {
+                    if (!userReadStatus.has(notification.id)) {
                       markAsRead(notification.id);
                     }
                   }}
                   className={`${getNotificationColor(notification.type)} border-l-4 rounded-lg p-4 cursor-pointer transition-all hover:shadow-lg ${
-                    notification.status === 'sent' ? 'bg-opacity-30' : 'bg-opacity-10'
+                    !userReadStatus.has(notification.id) ? 'bg-opacity-30' : 'bg-opacity-10'
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -317,12 +361,12 @@ const NotificationsPage = () => {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <h3 className={`font-semibold text-base ${
-                            notification.status === 'sent' ? 'text-white' : 'text-gray-300'
+                            !userReadStatus.has(notification.id) ? 'text-white' : 'text-gray-300'
                           }`}>
                             {notification.title || 'Notification'}
                           </h3>
                           <p className={`text-sm mt-1 ${
-                            notification.status === 'sent' ? 'text-gray-200' : 'text-gray-400'
+                            !userReadStatus.has(notification.id) ? 'text-gray-200' : 'text-gray-400'
                           }`}>
                             {notification.message}
                           </p>
@@ -337,7 +381,7 @@ const NotificationsPage = () => {
 
                         {/* Status Icon */}
                         <div className="flex-shrink-0">
-                          {notification.status === 'sent' ? (
+                          {!userReadStatus.has(notification.id) ? (
                             <FiCircle className="text-orange-400 text-xl" />
                           ) : (
                             <FiCheckCircle className="text-green-400 text-xl" />
