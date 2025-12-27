@@ -12,10 +12,10 @@ import {
 
 const examCards = [
   {
-    title: 'Exam Timetable',
+    title: 'View Upcoming / Past Exams',
     icon: <FaCalendarAlt className="text-3xl" />,
     bg: '#1abc9c',
-    href: '/exams/timetable'
+    href: '/exams/history'
   },
   {
     title: 'Take Online Exams',
@@ -30,12 +30,12 @@ const examCards = [
   //   bg: '#3498db',
   //   href: '/exams/results'
   // },
-  // {
-  //   title: 'Download Transcripts',
-  //   icon: <FaFileDownload className="text-3xl" />,
-  //   bg: '#e74c3c',
-  //   href: '/exams/transcripts'
-  // }
+  {
+    title: 'Download Transcripts',
+    icon: <FaFileDownload className="text-3xl" />,
+    bg: '#e74c3c',
+    href: '/exams/transcripts'
+  }
 ]
 
 function Exams() {

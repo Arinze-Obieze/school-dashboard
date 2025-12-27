@@ -1,7 +1,5 @@
 export async function GET(request) {
-  console.log(process.env.WACCPS_API_KEY)
-  console.log('API Key:', JSON.stringify(process.env.WACCPS_API_KEY));
-console.log('Length:', process.env.WACCPS_API_KEY?.length);
+
   try {
     const { searchParams } = new URL(request.url);
     const studentId = searchParams.get('studentId');
@@ -24,7 +22,6 @@ console.log('Length:', process.env.WACCPS_API_KEY?.length);
 
     if (!res.ok) {
   const errorText = await res.text();
-  console.log('API Error:', res.status, errorText);
   return Response.json(
     { error: 'Failed to fetch exams', details: errorText },
     { status: res.status }

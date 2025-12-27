@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   FaCalendarAlt, 
   FaClock, 
@@ -10,26 +10,106 @@ import {
   FaExclamationTriangle,
   FaRegClock,
   FaBook,
-  FaGraduationCap,
   FaPlayCircle,
-  FaListOl,
   FaHourglassHalf,
-  FaUserGraduate,
   FaSync
 } from 'react-icons/fa';
 import { 
-  MdLaptop, 
   MdHistory, 
   MdUpcoming,
-  MdAccessTime,
-  MdScore,
-  MdQuestionAnswer,
   MdSchool,
   MdTimer
 } from "react-icons/md";
-import { TbClockHour4, TbClock } from "react-icons/tb";
+import { TbClockHour4 } from "react-icons/tb";
 import Link from 'next/link';
 import { auth } from '@/firebase';
+
+// Tab configuration 
+const TAB_CONFIG = [
+  { id: 'upcoming', label: 'Upcoming', icon: MdUpcoming, color: 'blue' },
+  { id: 'active', label: 'Active Now', icon: FaPlayCircle, color: 'green' },
+  { id: 'in-progress', label: 'In Progress', icon: TbClockHour4, color: 'yellow' },
+  { id: 'history', label: 'History', icon: MdHistory, color: 'gray' },
+];
+
+// Status configuration 
+const STATUS_CONFIG = {
+  upcoming: {
+    badge: {
+      bg: 'bg-blue-500/20',
+      text: 'text-blue-300',
+      icon: FaRegClock,
+      label: 'Upcoming'
+    },
+    card: 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-blue-500/30'
+  },
+  active: {
+    badge: {
+      bg: 'bg-green-500/20',
+      text: 'text-green-300',
+      icon: FaPlayCircle,
+      label: 'Active Now',
+      animate: 'animate-pulse'
+    },
+    card: 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/30'
+  },
+  'in-progress': {
+    badge: {
+      bg: 'bg-yellow-500/20',
+      text: 'text-yellow-300',
+      icon: FaPlayCircle,
+      label: 'In Progress',
+      animate: 'animate-pulse'
+    },
+    card: 'bg-gradient-to-br from-yellow-900/20 to-amber-900/20 border-yellow-500/30'
+  },
+  completed: {
+    badge: {
+      bg: 'bg-purple-500/20',
+      text: 'text-purple-300',
+      icon: FaCheckCircle,
+      label: 'Completed'
+    },
+    card: 'bg-gradient-to-br from-purple-900/20 to-violet-900/20 border-purple-500/30'
+  },
+  past: {
+    badge: {
+      bg: 'bg-gray-500/20',
+      text: 'text-gray-300',
+      icon: FaTimesCircle,
+      label: 'Past'
+    },
+    card: 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-600'
+  }
+};
+
+// Color mapping 
+const COLOR_CLASSES = {
+  blue: {
+    icon: 'text-blue-400',
+    badge: 'bg-blue-500/20 text-blue-300',
+    border: 'border-blue-500',
+    stat: 'text-blue-400'
+  },
+  green: {
+    icon: 'text-green-400',
+    badge: 'bg-green-500/20 text-green-300',
+    border: 'border-green-500',
+    stat: 'text-green-400'
+  },
+  yellow: {
+    icon: 'text-yellow-400',
+    badge: 'bg-yellow-500/20 text-yellow-300',
+    border: 'border-yellow-500',
+    stat: 'text-yellow-400'
+  },
+  gray: {
+    icon: 'text-gray-400',
+    badge: 'bg-gray-500/20 text-gray-300',
+    border: 'border-gray-500',
+    stat: 'text-gray-400'
+  }
+};
 
 const ExamPortalPage = () => {
   const [exams, setExams] = useState([]);
@@ -39,46 +119,16 @@ const ExamPortalPage = () => {
   const [user, setUser] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Helper functions for dynamic classes
-  const getTabIconColor = (color) => {
-    switch(color) {
-      case 'blue': return 'text-blue-400';
-      case 'green': return 'text-green-400';
-      case 'yellow': return 'text-yellow-400';
-      case 'gray': return 'text-gray-400';
-      default: return 'text-gray-400';
-    }
-  };
-
-  const getTabBadgeClasses = (color) => {
-    switch(color) {
-      case 'blue': return 'bg-blue-500/20 text-blue-300';
-      case 'green': return 'bg-green-500/20 text-green-300';
-      case 'yellow': return 'bg-yellow-500/20 text-yellow-300';
-      case 'gray': return 'bg-gray-500/20 text-gray-300';
-      default: return 'bg-gray-500/20 text-gray-300';
-    }
-  };
-
-  const getTabBorderColor = (color) => {
-    switch(color) {
-      case 'blue': return 'border-blue-500';
-      case 'green': return 'border-green-500';
-      case 'yellow': return 'border-yellow-500';
-      case 'gray': return 'border-gray-500';
-      default: return 'border-gray-500';
-    }
-  };
-
   // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Update every minute
+    }, 60000);
     
     return () => clearInterval(timer);
   }, []);
 
+  // Auth listener
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
@@ -92,43 +142,40 @@ const ExamPortalPage = () => {
     return () => unsubscribe();
   }, []);
 
-  const getExamStatus = (exam) => {
+  // Get exam status based on time
+  const getExamStatus = useCallback((exam) => {
     const now = currentTime;
-    
-    // Create dates in local timezone
     const examStart = new Date(`${exam.date}T${exam.time_range_start}`);
     const examEnd = new Date(`${exam.date}T${exam.time_range_end}`);
     
-    // If exam was manually marked as started/completed in API
+    // If exam was manually marked as started/completed
     if (exam.started === 1) {
       return exam.completed === 1 ? 'completed' : 'in-progress';
     }
     
-    // Add buffer time (15 minutes before/after)
-    const bufferMs = 15 * 60 * 1000; // 15 minutes in milliseconds
+    const bufferMs = 15 * 60 * 1000; // 15 minutes buffer
     
-    // Determine status based on current time
     if (now < (examStart - bufferMs)) {
       return 'upcoming';
     } else if (now >= (examStart - bufferMs) && now <= examEnd) {
-      return 'active'; // Exam is currently happening or about to start
+      return 'active';
     } else if (now > examEnd && now <= (examEnd + bufferMs)) {
-      return 'active'; // Grace period after exam ends
+      return 'active';
     } else if (now > examEnd) {
       return 'past';
     }
     
     return 'unknown';
-  };
+  }, [currentTime]);
 
-  const fetchExams = async (studentId) => {
+  // Fetch exams from API
+  const fetchExams = useCallback(async (studentId) => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await fetch(`/api/exams?studentId=${studentId}`, {
-      });
-
+      const response = await fetch(`/api/exams?studentId=${studentId}`);
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `API returned ${response.status}`);
@@ -136,14 +183,13 @@ const ExamPortalPage = () => {
 
       const data = await response.json();
       
-      // Handle empty or invalid response
       if (!Array.isArray(data)) {
         console.warn('API returned non-array data:', data);
         setExams([]);
         return;
       }
       
-      // Transform and add calculated status
+      // Transform exam data
       const transformedExams = data.map((exam, index) => ({
         id: exam.quiz_id?.toString() || `exam-${index}`,
         exam_id: exam.quiz_id,
@@ -164,7 +210,6 @@ const ExamPortalPage = () => {
         last_update: exam.last_update,
         instructions: 'Follow all exam guidelines. Ensure stable internet connection.',
         exam_link: `https://cbt.waccps.org/exam/${exam.quiz_id}`,
-        // Calculate status based on time
         status: getExamStatus({
           date: exam.date,
           time_range_start: exam.time_range_start,
@@ -182,14 +227,12 @@ const ExamPortalPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getExamStatus]);
 
-  // Filter and sort exams based on active tab
+  // Calculate filtered exams and stats
   const { filteredExams, stats } = useMemo(() => {
-    const now = currentTime;
     const allExams = exams.map(exam => ({
       ...exam,
-      // Recalculate status for each exam
       status: getExamStatus(exam)
     }));
 
@@ -230,16 +273,17 @@ const ExamPortalPage = () => {
       const bDate = new Date(`${b.date}T${b.time_range_start}`);
       
       if (activeTab === 'upcoming' || activeTab === 'active') {
-        return aDate - bDate; // Soonest first
+        return aDate - bDate;
       } else {
-        return bDate - aDate; // Most recent first
+        return bDate - aDate;
       }
     });
 
     return { filteredExams, stats };
-  }, [exams, activeTab, currentTime]);
+  }, [exams, activeTab, getExamStatus]);
 
-  const formatDate = (dateString) => {
+  // Format date
+  const formatDate = useCallback((dateString) => {
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('en-US', {
@@ -251,9 +295,10 @@ const ExamPortalPage = () => {
     } catch (error) {
       return dateString;
     }
-  };
+  }, []);
 
-  const formatTime = (timeString) => {
+  // Format time
+  const formatTime = useCallback((timeString) => {
     if (!timeString) return '';
     try {
       const time = new Date(`2000-01-01T${timeString}`);
@@ -265,75 +310,33 @@ const ExamPortalPage = () => {
     } catch (error) {
       return timeString;
     }
-  };
+  }, []);
 
-  const formatDuration = (hours, minutes) => {
+  // Format duration
+  const formatDuration = useCallback((hours, minutes) => {
     const parts = [];
     if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
     if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
     return parts.join(' ') || 'No time limit';
-  };
+  }, []);
 
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'upcoming':
-        return (
-          <span className="bg-blue-500/20 text-blue-300 text-xs px-3 py-1 rounded-full flex items-center">
-            <FaRegClock className="mr-1.5" />
-            Upcoming
-          </span>
-        );
-      case 'active':
-        return (
-          <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full flex items-center animate-pulse">
-            <FaPlayCircle className="mr-1.5" />
-            Active Now
-          </span>
-        );
-      case 'in-progress':
-        return (
-          <span className="bg-yellow-500/20 text-yellow-300 text-xs px-3 py-1 rounded-full flex items-center animate-pulse">
-            <FaPlayCircle className="mr-1.5" />
-            In Progress
-          </span>
-        );
-      case 'completed':
-        return (
-          <span className="bg-purple-500/20 text-purple-300 text-xs px-3 py-1 rounded-full flex items-center">
-            <FaCheckCircle className="mr-1.5" />
-            Completed
-          </span>
-        );
-      case 'past':
-        return (
-          <span className="bg-gray-500/20 text-gray-300 text-xs px-3 py-1 rounded-full flex items-center">
-            <FaTimesCircle className="mr-1.5" />
-            Past
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
+  // Get status badge component
+  const getStatusBadge = useCallback((status) => {
+    const config = STATUS_CONFIG[status];
+    if (!config) return null;
+    
+    const Icon = config.badge.icon;
+    
+    return (
+      <span className={`${config.badge.bg} ${config.badge.text} text-xs px-3 py-1 rounded-full flex items-center ${config.badge.animate || ''}`}>
+        <Icon className="mr-1.5" />
+        {config.badge.label}
+      </span>
+    );
+  }, []);
 
-  const getExamCardBg = (status) => {
-    switch(status) {
-      case 'active':
-        return 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/30';
-      case 'in-progress':
-        return 'bg-gradient-to-br from-yellow-900/20 to-amber-900/20 border-yellow-500/30';
-      case 'completed':
-        return 'bg-gradient-to-br from-purple-900/20 to-violet-900/20 border-purple-500/30';
-      case 'upcoming':
-        return 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-blue-500/30';
-      case 'past':
-        return 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-600';
-      default:
-        return 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700';
-    }
-  };
-
-  const getTimeRemaining = (date, startTime) => {
+  // Get time remaining text
+  const getTimeRemaining = useCallback((date, startTime) => {
     const examStart = new Date(`${date}T${startTime}`);
     const now = currentTime;
     const diffMs = examStart - now;
@@ -351,8 +354,51 @@ const ExamPortalPage = () => {
     } else {
       return `In ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
     }
-  };
+  }, [currentTime]);
 
+  // Stats bar items - mapped properly
+  const STAT_ITEMS = [
+    { label: 'Total', value: stats.total, color: 'gray' },
+    { label: 'Upcoming', value: stats.upcoming, color: 'blue' },
+    { label: 'Active', value: stats.active, color: 'green' },
+    { label: 'In Progress', value: stats.inProgress, color: 'yellow' },
+    { label: 'Completed', value: stats.completed, color: 'purple' },
+    { label: 'Past', value: stats.past, color: 'gray' },
+  ];
+
+  // Info items for each exam card - mapped properly
+  const EXAM_INFO_ITEMS = [
+    {
+      key: 'date',
+      label: 'Date',
+      icon: FaCalendarAlt,
+      color: 'blue',
+      getValue: (exam) => formatDate(exam.date)
+    },
+    {
+      key: 'time',
+      label: 'Time Slot',
+      icon: FaClock,
+      color: 'purple',
+      getValue: (exam) => `${formatTime(exam.time_range_start)} - ${formatTime(exam.time_range_end)}`
+    },
+    {
+      key: 'duration',
+      label: 'Duration',
+      icon: MdTimer,
+      color: 'yellow',
+      getValue: (exam) => formatDuration(exam.duration_hours, exam.duration_minutes)
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      icon: FaHourglassHalf,
+      color: 'green',
+      getValue: (exam) => exam.status.replace('-', ' ')
+    }
+  ];
+
+  // Loading state
   if (loading && exams.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
@@ -368,7 +414,7 @@ const ExamPortalPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-[#3e444d] p-4 sm:p-6 md:p-8">
       <div className="md:max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
@@ -377,7 +423,6 @@ const ExamPortalPage = () => {
               <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-2">
                 Exam History
               </h1>
-       
             </div>
             
             <div className="flex items-center gap-4">
@@ -406,30 +451,19 @@ const ExamPortalPage = () => {
           {exams.length > 0 && (
             <div className="bg-gray-800/50 rounded-xl p-4 mb-6 border border-gray-700">
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                <div className="text-center p-3 bg-gray-900/30 rounded-lg">
-                  <p className="text-2xl font-bold text-white">{stats.total}</p>
-                  <p className="text-xs text-gray-400">Total</p>
-                </div>
-                <div className="text-center p-3 bg-blue-900/20 rounded-lg border border-blue-500/20">
-                  <p className="text-2xl font-bold text-blue-400">{stats.upcoming}</p>
-                  <p className="text-xs text-blue-400">Upcoming</p>
-                </div>
-                <div className="text-center p-3 bg-green-900/20 rounded-lg border border-green-500/20">
-                  <p className="text-2xl font-bold text-green-400">{stats.active}</p>
-                  <p className="text-xs text-green-400">Active</p>
-                </div>
-                <div className="text-center p-3 bg-yellow-900/20 rounded-lg border border-yellow-500/20">
-                  <p className="text-2xl font-bold text-yellow-400">{stats.inProgress}</p>
-                  <p className="text-xs text-yellow-400">In Progress</p>
-                </div>
-                <div className="text-center p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
-                  <p className="text-2xl font-bold text-purple-400">{stats.completed}</p>
-                  <p className="text-xs text-purple-400">Completed</p>
-                </div>
-                <div className="text-center p-3 bg-gray-900/20 rounded-lg border border-gray-500/20">
-                  <p className="text-2xl font-bold text-gray-400">{stats.past}</p>
-                  <p className="text-xs text-gray-400">Past</p>
-                </div>
+                {STAT_ITEMS.map((stat) => (
+                  <div 
+                    key={stat.label}
+                    className={`text-center p-3 ${stat.color === 'purple' ? 'bg-purple-900/20 border-purple-500/20' : `bg-${stat.color}-900/20 border-${stat.color}-500/20`} rounded-lg border`}
+                  >
+                    <p className={`text-2xl font-bold ${stat.color === 'purple' ? 'text-purple-400' : `text-${stat.color}-400`}`}>
+                      {stat.value}
+                    </p>
+                    <p className={`text-xs ${stat.color === 'purple' ? 'text-purple-400' : `text-${stat.color}-400`}`}>
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -437,30 +471,31 @@ const ExamPortalPage = () => {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6 sm:mb-8 border-b border-gray-700">
-          {[
-            { id: 'upcoming', label: 'Upcoming', icon: MdUpcoming, color: 'blue', count: stats.upcoming },
-            { id: 'active', label: 'Active Now', icon: FaPlayCircle, color: 'green', count: stats.active },
-            { id: 'in-progress', label: 'In Progress', icon: TbClockHour4, color: 'yellow', count: stats.inProgress },
-            { id: 'history', label: 'History', icon: MdHistory, color: 'gray', count: stats.past + stats.completed },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center px-4 py-3 text-sm sm:text-base rounded-t-lg transition-all duration-200 ${
-                activeTab === tab.id
-                  ? `bg-gray-800 text-white border-b-2 ${getTabBorderColor(tab.color)}`
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-              }`}
-            >
-              <tab.icon className={`mr-2 ${getTabIconColor(tab.color)}`} />
-              {tab.label}
-              <span className={`ml-2 ${getTabBadgeClasses(tab.color)} text-xs px-2 py-0.5 rounded-full`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
+          {TAB_CONFIG.map((tab) => {
+            const count = stats[tab.id] || stats[tab.id === 'history' ? 'past' + stats.completed : tab.id];
+            const colorClass = COLOR_CLASSES[tab.color];
+            
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center px-4 py-3 text-sm sm:text-base rounded-t-lg transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? `bg-gray-800 text-white border-b-2 ${colorClass.border}`
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                }`}
+              >
+                <tab.icon className={`mr-2 ${colorClass.icon}`} />
+                {tab.label}
+                <span className={`ml-2 ${colorClass.badge} text-xs px-2 py-0.5 rounded-full`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
+        {/* Error Display */}
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
             <div className="flex items-center">
@@ -483,14 +518,10 @@ const ExamPortalPage = () => {
           {filteredExams.length === 0 ? (
             <div className="bg-gray-800/50 rounded-2xl p-8 sm:p-12 text-center border border-gray-700">
               <div className="inline-block p-4 rounded-full bg-gray-700/50 mb-4">
-                {activeTab === 'upcoming' ? (
-                  <MdUpcoming className="text-5xl text-gray-500" />
-                ) : activeTab === 'active' ? (
-                  <FaPlayCircle className="text-5xl text-gray-500" />
-                ) : activeTab === 'in-progress' ? (
-                  <TbClockHour4 className="text-5xl text-gray-500" />
-                ) : (
-                  <MdHistory className="text-5xl text-gray-500" />
+                {TAB_CONFIG.find(tab => tab.id === activeTab)?.icon && (
+                  React.createElement(TAB_CONFIG.find(tab => tab.id === activeTab).icon, {
+                    className: "text-5xl text-gray-500"
+                  })
                 )}
               </div>
               <h3 className="text-xl sm:text-2xl font-bold text-gray-400 mb-3">
@@ -507,178 +538,152 @@ const ExamPortalPage = () => {
               </p>
             </div>
           ) : (
-            filteredExams.map((exam) => (
-              <div
-                key={exam.id}
-                className={`${getExamCardBg(exam.status)} rounded-xl sm:rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:border-gray-500 hover:shadow-xl`}
-              >
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 sm:gap-6">
-                  <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
-                          {exam.title}
-                        </h3>
-                        <div className="flex items-center flex-wrap gap-2">
-                          <span className="inline-flex items-center bg-gray-700/50 text-gray-300 text-xs px-3 py-1 rounded-full">
-                            <FaBook className="mr-1.5" />
-                            {exam.course_name}
-                          </span>
-                          <span className="inline-flex items-center bg-gray-700/50 text-gray-300 text-xs px-3 py-1 rounded-full">
-                            <MdSchool className="mr-1.5" />
-                            {exam.course_code}
-                          </span>
-                          {exam.status === 'upcoming' && (
-                            <span className="inline-flex items-center bg-blue-500/20 text-blue-300 text-xs px-3 py-1 rounded-full">
-                              <FaClock className="mr-1.5" />
-                              {getTimeRemaining(exam.date, exam.time_range_start)}
+            filteredExams.map((exam) => {
+              const statusConfig = STATUS_CONFIG[exam.status] || STATUS_CONFIG.past;
+              
+              return (
+                <div
+                  key={exam.id}
+                  className={`${statusConfig.card} rounded-xl sm:rounded-2xl p-4 sm:p-6 border transition-all duration-300 hover:border-gray-500 hover:shadow-xl`}
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 sm:gap-6">
+                    <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                            {exam.title}
+                          </h3>
+                          <div className="flex items-center flex-wrap gap-2">
+                            <span className="inline-flex items-center bg-gray-700/50 text-gray-300 text-xs px-3 py-1 rounded-full">
+                              <FaBook className="mr-1.5" />
+                              {exam.course_name}
                             </span>
-                          )}
+                            <span className="inline-flex items-center bg-gray-700/50 text-gray-300 text-xs px-3 py-1 rounded-full">
+                              <MdSchool className="mr-1.5" />
+                              {exam.course_code}
+                            </span>
+                            {exam.status === 'upcoming' && (
+                              <span className="inline-flex items-center bg-blue-500/20 text-blue-300 text-xs px-3 py-1 rounded-full">
+                                <FaClock className="mr-1.5" />
+                                {getTimeRemaining(exam.date, exam.time_range_start)}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      {getStatusBadge(exam.status)}
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                      <div className="flex items-start space-x-3">
-                        <div className="bg-blue-500/10 p-2 rounded-lg mt-1">
-                          <FaCalendarAlt className="text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Date</p>
-                          <p className="text-white font-medium">{formatDate(exam.date)}</p>
-                        </div>
+                        {getStatusBadge(exam.status)}
                       </div>
                       
-                      <div className="flex items-start space-x-3">
-                        <div className="bg-purple-500/10 p-2 rounded-lg mt-1">
-                          <FaClock className="text-purple-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Time Slot</p>
-                          <p className="text-white font-medium">
-                            {formatTime(exam.time_range_start)} - {formatTime(exam.time_range_end)}
-                          </p>
-                        </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        {EXAM_INFO_ITEMS.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <div key={item.key} className="flex items-start space-x-3">
+                              <div className={`bg-${item.color}-500/10 p-2 rounded-lg mt-1`}>
+                                <Icon className={`text-${item.color}-400`} />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-400">{item.label}</p>
+                                <p className="text-white font-medium capitalize">
+                                  {item.getValue(exam)}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                       
-                      <div className="flex items-start space-x-3">
-                        <div className="bg-yellow-500/10 p-2 rounded-lg mt-1">
-                          <MdTimer className="text-yellow-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Duration</p>
-                          <p className="text-white font-medium">
-                            {formatDuration(exam.duration_hours, exam.duration_minutes)}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start space-x-3">
-                        <div className="bg-green-500/10 p-2 rounded-lg mt-1">
-                          <FaHourglassHalf className="text-green-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Status</p>
-                          <p className="text-white font-medium capitalize">
-                            {exam.status.replace('-', ' ')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Time Info */}
-                    <div className="bg-gray-900/50 rounded-lg p-3 sm:p-4 border border-gray-700/50 mb-4">
-                      <p className="text-sm text-gray-400 mb-2 flex items-center">
-                        <FaExclamationTriangle className="mr-2 text-yellow-500" />
-                        Exam Window: 
-                        <span className="ml-2 text-white">
-                          {formatDate(exam.date)} from {formatTime(exam.time_range_start)} to {formatTime(exam.time_range_end)}
-                        </span>
-                      </p>
-                      {exam.status === 'upcoming' && (
-                        <p className="text-sm text-blue-400">
-                          Starts {getTimeRemaining(exam.date, exam.time_range_start).toLowerCase()}
+                      {/* Time Info */}
+                      <div className="bg-gray-900/50 rounded-lg p-3 sm:p-4 border border-gray-700/50 mb-4">
+                        <p className="text-sm text-gray-400 mb-2 flex items-center">
+                          <FaExclamationTriangle className="mr-2 text-yellow-500" />
+                          Exam Window: 
+                          <span className="ml-2 text-white">
+                            {formatDate(exam.date)} from {formatTime(exam.time_range_start)} to {formatTime(exam.time_range_end)}
+                          </span>
                         </p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Action Button */}
-                  <div className="lg:w-64 flex-shrink-0">
-                    {exam.status === 'active' || exam.status === 'in-progress' ? (
-                      <Link
-                        href={exam.exam_link || 'https://cbt.waccps.org/'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-green-500/25 flex items-center justify-center group"
-                      >
-                        <FaPlayCircle className="mr-3 text-xl" />
-                        <div className="text-left">
-                          <div className="font-bold">
-                            {exam.status === 'in-progress' ? 'Continue Exam' : 'Start Exam'}
-                          </div>
-                          <div className="text-xs opacity-90">
-                            {exam.status === 'in-progress' ? 'Resume your exam' : 'Exam is now active'}
-                          </div>
-                        </div>
-                        <FaArrowRight className="ml-3 group-hover:translate-x-1 transition-transform" />
-                      </Link>
-                    ) : exam.status === 'upcoming' ? (
-                      <div className="bg-gray-900/80 rounded-lg p-4 sm:p-5 border border-gray-700">
-                        <div className="text-center mb-3">
-                          <FaRegClock className="text-3xl text-blue-400 mx-auto mb-2" />
-                          <p className="text-white font-bold">Upcoming</p>
-                          <p className="text-blue-300 text-sm mt-1">
-                            {getTimeRemaining(exam.date, exam.time_range_start)}
+                        {exam.status === 'upcoming' && (
+                          <p className="text-sm text-blue-400">
+                            Starts {getTimeRemaining(exam.date, exam.time_range_start).toLowerCase()}
                           </p>
-                        </div>
-                        <div className="text-xs text-gray-400 text-center">
-                          Available from {formatTime(exam.time_range_start)}
-                        </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="bg-gray-900/80 rounded-lg p-4 sm:p-5 border border-gray-700">
-                        <div className="text-center mb-3">
-                          <FaCheckCircle className="text-3xl text-gray-400 mx-auto mb-2" />
-                          <p className="text-white font-bold">Exam {exam.completed ? 'Completed' : 'Ended'}</p>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-400 text-sm">Status</span>
-                            <span className="text-gray-300 font-medium capitalize">
-                              {exam.completed ? 'Submitted' : 'Time Ended'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-400 text-sm">Date</span>
-                            <span className="text-white">{formatDate(exam.date)}</span>
-                          </div>
-                          <button 
-                            onClick={() => {/* View results function */}}
-                            className="w-full mt-3 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white py-2 rounded-lg transition-colors text-sm"
-                          >
-                            {exam.completed ? 'View Results' : 'Review Exam'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    </div>
                     
-                    {/* Additional Info */}
-                    <div className="mt-4 text-xs text-gray-500">
-                      <p className="flex items-center">
-                        <span className="inline-block w-2 h-2 bg-gray-600 rounded-full mr-2"></span>
-                        Exam ID: {exam.exam_id}
-                      </p>
-                      <p className="flex items-center mt-1">
-                        <span className="inline-block w-2 h-2 bg-gray-600 rounded-full mr-2"></span>
-                        Duration: {exam.total_duration_minutes} minutes
-                      </p>
+                    {/* Action Button */}
+                    <div className="lg:w-64 flex-shrink-0">
+                      {exam.status === 'active' || exam.status === 'in-progress' ? (
+                        <Link
+                          href={exam.exam_link || 'https://cbt.waccps.org/'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className=" w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-green-500/25 flex items-center justify-center group"
+                        >
+                          <FaPlayCircle className="mr-3 text-xl" />
+                          <div className="text-left">
+                            <div className="font-bold">
+                              {exam.status === 'in-progress' ? 'Continue Exam' : 'Start Exam'}
+                            </div>
+                            <div className="text-xs opacity-90">
+                              {exam.status === 'in-progress' ? 'Resume your exam' : 'Exam is now active'}
+                            </div>
+                          </div>
+                          <FaArrowRight className="ml-3 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                      ) : exam.status === 'upcoming' ? (
+                        <div className="bg-gray-900/80 rounded-lg p-4 sm:p-5 border border-gray-700">
+                          <div className="text-center mb-3">
+                            <FaRegClock className="text-3xl text-blue-400 mx-auto mb-2" />
+                            <p className="text-white font-bold">Upcoming</p>
+                            <p className="text-blue-300 text-sm mt-1">
+                              {getTimeRemaining(exam.date, exam.time_range_start)}
+                            </p>
+                          </div>
+                          <div className="text-xs text-gray-400 text-center">
+                            Available from {formatTime(exam.time_range_start)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-gray-900/80 rounded-lg p-4 sm:p-5 border border-gray-700">
+                          <div className="text-center mb-3">
+                            <FaCheckCircle className="text-3xl text-gray-400 mx-auto mb-2" />
+                            <p className="text-white font-bold">Exam {exam.completed ? 'Completed' : 'Ended'}</p>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-400 text-sm">Status</span>
+                              <span className="text-gray-300 font-medium capitalize">
+                                {exam.completed ? 'Submitted' : 'Time Ended'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-400 text-sm">Date</span>
+                              <span className="text-white">{formatDate(exam.date)}</span>
+                            </div>
+                            <button 
+                              className="w-full mt-3 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white py-2 rounded-lg transition-colors text-sm"
+                            >
+                              {exam.completed ? 'View Results' : 'Review Exam'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Additional Info */}
+                      <div className="mt-4 text-xs text-gray-300">
+                        <p className="flex items-center">
+                          <span className="inline-block w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                          Exam ID: {exam.exam_id}
+                        </p>
+                        <p className="flex items-center mt-1">
+                          <span className="inline-block w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                          Duration: {exam.total_duration_minutes} minutes
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
