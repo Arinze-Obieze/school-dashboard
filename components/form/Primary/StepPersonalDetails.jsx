@@ -83,7 +83,7 @@ export default function StepPersonalDetails({ formData, handleChange }) {
 
       {/* Contact Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
+          <div className="space-y-2">
           <label className="block text-lg font-medium text-gray-300">Email Address*</label>
           <input
             type="email"
@@ -106,6 +106,9 @@ export default function StepPersonalDetails({ formData, handleChange }) {
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleChange}
+              minLength="10"
+              maxLength="15"
+              pattern="[0-9\s+]+"
               className="block w-full pl-8 px-4 py-3 text-base rounded-lg border border-gray-500 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
               placeholder="234 123 456 7890"

@@ -28,6 +28,7 @@ export default function StepInstitutionDetails({ formData, handleChange, onCours
             onChange={handleChange}
             min="1900"
             max={new Date().getFullYear()}
+            step="1"
             className="block w-full px-4 py-3 text-base rounded-lg border border-gray-500 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
             placeholder="2020"
@@ -40,8 +41,8 @@ export default function StepInstitutionDetails({ formData, handleChange, onCours
         <p className="text-sm text-gray-400 mb-3">Select one subspecialty</p>
         <CourseSelect 
           value={formData.courseSelection}
-          onChange={onCourseSelection}
-                    required
+          onChange={(selectedCourse) => onCourseSelection(selectedCourse)}
+          required
         />
       </div>
     </div>

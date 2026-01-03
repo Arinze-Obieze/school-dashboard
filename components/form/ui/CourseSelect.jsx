@@ -15,6 +15,10 @@ const COURSE_OPTIONS = [
 ];
 
 export default function CourseSelect({ value, onChange, required = false }) {
+  const handleChange = (e) => {
+    onChange(e.target.value);
+  };
+
   return (
     <div>
       <label htmlFor="course" className="block text-sm font-medium text-gray-300">
@@ -23,8 +27,8 @@ export default function CourseSelect({ value, onChange, required = false }) {
       <select
         id="course"
         name="course"
-        value={value}
-        onChange={onChange}
+        value={value || ''}
+        onChange={handleChange}
         required={required}
         className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-200"
       >

@@ -117,6 +117,22 @@ export default function PrimaryRegistration() {
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
+    
+    // Validate input based on field type
+    if (name === 'phoneNumber' && value) {
+      // Only allow digits and spaces
+      if (!/^[\d\s+]*$/.test(value)) return;
+    }
+    
+    if (name === 'email' && value) {
+      // Basic email validation on change - allow any input, validate on submit
+    }
+    
+    if (name === 'graduationYear' && value) {
+      // Only allow 4 digit year
+      if (!/^\d{0,4}$/.test(value)) return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : type === 'file' ? files[0] : value
@@ -138,26 +154,69 @@ export default function PrimaryRegistration() {
   const isStepValid = () => {
     const validations = [
       // Step 0: Personal Details
-      () => formData.title && formData.surname && formData.firstName && 
-            formData.email && formData.phoneNumber,
+      () => {
+        const valid = !!(formData.title && formData.surname && formData.firstName && 
+            formData.email && formData.phoneNumber);
+        return valid;
+      },
       
       // Step 1: Demographic Information
-      () => formData.dateOfBirth && formData.gender && formData.nationality && 
-            formData.streetAddress && formData.city && formData.state && formData.country,
+      () => {
+        const valid = !!(formData.dateOfBirth && formData.gender && formData.nationality && 
+            formData.streetAddress && formData.city && formData.state && formData.country);
+        return valid;
+      },
       
       // Step 2: Institution Details
-      () => formData.institutionName && formData.graduationYear && 
-            formData.courseSelection,
+      () => {
+        const valid = !!(formData.institutionName && formData.graduationYear && 
+            formData.courseSelection);
+        return valid;
+      },
+      
+      // Step 3: Career Intentions
+      () => {
+        const valid = formData.practiceAbroad !== '';
+        return valid;
+      },
+      
+      // Step 4: Attachments & Declaration
+      () => {
+        const valid = !!(formData.degreeCertificate && formData.trainingCertificate && 
+            formData.passportPhotos && formData.declarationChecked && formData.declarationDate);
+        return valid;
+      }
+    ];
+    
+    const isValid = validations[step] ? validations[step]() : true;
+    return isValid;
+  };
+
+  const isAllStepsValid = () => {
+    const validations = [
+      // Step 0: Personal Details
+      () => !!(formData.title && formData.surname && formData.firstName && 
+            formData.email && formData.phoneNumber),
+      
+      // Step 1: Demographic Information
+      () => !!(formData.dateOfBirth && formData.gender && formData.nationality && 
+            formData.streetAddress && formData.city && formData.state && formData.country),
+      
+      // Step 2: Institution Details
+      () => !!(formData.institutionName && formData.graduationYear && 
+            formData.courseSelection),
       
       // Step 3: Career Intentions
       () => formData.practiceAbroad !== '',
       
       // Step 4: Attachments & Declaration
-      () => formData.degreeCertificate && formData.trainingCertificate && 
-            formData.passportPhotos && formData.declarationChecked && formData.declarationDate
+      () => !!(formData.degreeCertificate && formData.trainingCertificate && 
+            formData.passportPhotos && formData.declarationChecked && formData.declarationDate)
     ];
     
-    return validations[step] ? validations[step]() : true;
+    // Validate all steps
+    const allValid = validations.every(validation => validation());
+    return allValid;
   };
 
   const nextStep = () => {
@@ -258,8 +317,30 @@ export default function PrimaryRegistration() {
 
   const submitForm = async (e) => {
     e.preventDefault();
-    if (!isStepValid()) {
-      toast.error('Please complete all required fields before submitting.');
+    
+    // Debug: log the form data to check what's missing
+    console.log('Form Data:', formData);
+    console.log('Step:', step);
+    console.log('isAllStepsValid():', isAllStepsValid());
+    
+    if (!isAllStepsValid()) {
+      // Provide detailed feedback on which step is failing
+      const stepNames = ['Personal Details', 'Demographic Information', 'Institution Details', 'Career Intentions', 'Attachments & Declaration'];
+      const validations = [
+        () => !!(formData.title && formData.surname && formData.firstName && formData.email && formData.phoneNumber),
+        () => !!(formData.dateOfBirth && formData.gender && formData.nationality && formData.streetAddress && formData.city && formData.state && formData.country),
+        () => !!(formData.institutionName && formData.graduationYear && formData.courseSelection),
+        () => formData.practiceAbroad !== '',
+        () => !!(formData.degreeCertificate && formData.trainingCertificate && formData.passportPhotos && formData.declarationChecked && formData.declarationDate)
+      ];
+      
+      for (let i = 0; i < validations.length; i++) {
+        if (!validations[i]()) {
+          console.log(`Step ${i} (${stepNames[i]}) failed validation`);
+        }
+      }
+      
+      toast.error('Please complete all required fields in all steps before submitting.');
       return;
     }
     if (!user?.uid) {

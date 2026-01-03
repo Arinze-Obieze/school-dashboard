@@ -22,6 +22,13 @@ export async function GET(request) {
 
     if (!res.ok) {
   const errorText = await res.text();
+console.error('External API error', {
+  studentId,
+  status: res.status,
+  errorText,
+  apiUrl
+})
+
   return Response.json(
     { error: 'Failed to fetch exams', details: errorText },
     { status: res.status }

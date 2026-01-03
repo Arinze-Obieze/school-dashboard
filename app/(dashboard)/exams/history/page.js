@@ -142,15 +142,21 @@ const ExamPortalPage = () => {
     return () => unsubscribe();
   }, []);
 
+
+
   // Get exam status based on time
   const getExamStatus = useCallback((exam) => {
+
+  if (!exam.date || !exam.time_range_start || !exam.time_range_end) {
+  return 'upcoming';
+}
     const now = currentTime;
     const examStart = new Date(`${exam.date}T${exam.time_range_start}`);
     const examEnd = new Date(`${exam.date}T${exam.time_range_end}`);
     
     // If exam was manually marked as started/completed
-    if (exam.started === 1) {
-      return exam.completed === 1 ? 'completed' : 'in-progress';
+    if (exam.started) {
+      return exam.completed ? 'completed' : 'in-progress';
     }
     
     const bufferMs = 15 * 60 * 1000; // 15 minutes buffer
@@ -472,7 +478,10 @@ const ExamPortalPage = () => {
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6 sm:mb-8 border-b border-gray-700">
           {TAB_CONFIG.map((tab) => {
-            const count = stats[tab.id] || stats[tab.id === 'history' ? 'past' + stats.completed : tab.id];
+const count =
+  tab.id === 'history'
+    ? stats.past + stats.completed
+    : stats[tab.id] ?? 0;
             const colorClass = COLOR_CLASSES[tab.color];
             
             return (

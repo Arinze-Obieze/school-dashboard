@@ -5,21 +5,16 @@ export async function POST(req) {
   try {
     const { userId, amount, paymentType, txRef, description, customerEmail, customerName } = await req.json();
     
+    // Validate required fields
     if (!userId || !amount || !paymentType || !txRef) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'Missing required fields: userId, amount, paymentType, txRef' 
+      }, { status: 400 });
     }
 
-    // Verify user exists and get user reference
-    const userDoc = await adminDb.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userRef = adminDb.collection('users').doc(userId);
-
+    // Create payment record without user verification (user may not have doc yet)
     const paymentData = {
       userId,
-      userRef: userRef, // Firebase DocumentReference
       amount: Number(amount),
       currency: 'NGN',
       paymentType,
@@ -34,26 +29,22 @@ export async function POST(req) {
 
     const paymentRef = await adminDb.collection('payments').add(paymentData);
     
-    // Add payment reference to user document
-    await userRef.update({
-      payments: adminDb.FieldValue.arrayUnion({
-        paymentRef: paymentRef, // Firebase DocumentReference to payment
-        amount: Number(amount),
-        type: paymentType,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      }),
-      updatedAt: new Date().toISOString()
-    });
-    
     return NextResponse.json({ 
       success: true, 
       paymentId: paymentRef.id,
-      paymentData 
-    });
+      paymentData: {
+        txRef: txRef,
+        amount: Number(amount),
+        paymentType,
+        status: 'pending'
+      }
+    }, { status: 201 });
     
   } catch (error) {
-    console.error('Error creating payment record:', error);
-    return NextResponse.json({ error: 'Failed to create payment record' }, { status: 500 });
+    console.error('Error creating payment record:', error.message);
+    return NextResponse.json({ 
+      error: 'Failed to create payment record',
+      details: error.message 
+    }, { status: 500 });
   }
 }
