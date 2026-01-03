@@ -59,7 +59,9 @@ export default function StepExamDetails({ formData, handleChange }) {
       {/* Course Selection  */}
       <CourseSelect 
        value={formData.course}
-       onChange={handleChange}
+       onChange={(selectedCourse) => handleChange({
+         target: { name: 'course', value: selectedCourse }
+       })}
        required={true}
       />
 
