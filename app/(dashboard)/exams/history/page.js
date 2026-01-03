@@ -159,15 +159,18 @@ const ExamPortalPage = () => {
       return exam.completed ? 'completed' : 'in-progress';
     }
     
-    const bufferMs = 15 * 60 * 1000; // 15 minutes buffer
+    const bufferMs = 15 * 60 * 1000; // 15 minutes buffer before exam starts
     
+    // Upcoming: before exam start time (with 15 min buffer)
     if (now < (examStart - bufferMs)) {
       return 'upcoming';
-    } else if (now >= (examStart - bufferMs) && now <= examEnd) {
+    } 
+    // Active: from 15 minutes before start until exam end time
+    else if (now >= (examStart - bufferMs) && now <= examEnd) {
       return 'active';
-    } else if (now > examEnd && now <= (examEnd + bufferMs)) {
-      return 'active';
-    } else if (now > examEnd) {
+    } 
+    // Past: immediately after exam end time
+    else if (now > examEnd) {
       return 'past';
     }
     
