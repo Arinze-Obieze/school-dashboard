@@ -11,6 +11,8 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
+    console.log(`[PAYMENT] Verifying payment: txRef=${tx_ref}, userId=${userId}, transactionId=${transaction_id}`);
+    
     // Call Flutterwave verify endpoint
     const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY;
     const verifyUrl = `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`;
@@ -27,6 +29,7 @@ export async function POST(req) {
     }
     
     const flwData = await flwRes.json();
+    console.log(`[PAYMENT] Flutterwave response: ${JSON.stringify(flwData)}`);
     
     if (flwData.status === 'success' && flwData.data.status === 'successful') {
       if (flwData.data.tx_ref !== tx_ref) {
@@ -35,11 +38,8 @@ export async function POST(req) {
       
       const userRef = adminDb.collection('users').doc(userId);
       
-      // Verify user exists
+      // Get user doc (but don't fail if it doesn't exist - we'll create it)
       const userDoc = await userRef.get();
-      if (!userDoc.exists) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
       
       const paymentData = {
         userId: userId,
@@ -68,6 +68,7 @@ export async function POST(req) {
         // Create new payment document
         const paymentRef = await adminDb.collection('payments').add(paymentData);
         paymentId = paymentRef.id;
+        console.log(`[PAYMENT] Created new payment record: ${paymentId}`);
       } else {
         // Update existing payment document
         const paymentDoc = paymentsSnapshot.docs[0];
@@ -77,6 +78,7 @@ export async function POST(req) {
           ...paymentData,
           updatedAt: new Date().toISOString()
         });
+        console.log(`[PAYMENT] Updated existing payment record: ${paymentId}`);
       }
       
       // Update user document with payment status
@@ -88,16 +90,62 @@ export async function POST(req) {
         updatedAt: new Date().toISOString()
       };
       
-      await userRef.update(userUpdateData);
+      // Update or create user doc
+      if (userDoc.exists) {
+        await userRef.update(userUpdateData);
+      } else {
+        // Create user doc if it doesn't exist
+        await userRef.set(userUpdateData, { merge: true });
+      }
       
       // Add payment reference to user's payments array
-      const userData = userDoc.data();
+      const userData = userDoc.exists ? userDoc.data() : {};
       const userPayments = userData.payments || [];
       
       // Check if this payment already exists in user's payments array
       const existingPaymentIndex = userPayments.findIndex(
         payment => payment.txRef === tx_ref
       );
+      
+      const paymentRefObj = {
+        id: paymentId,
+        txRef: tx_ref,
+        amount: flwData.data.amount,
+        type: paymentType,
+        status: 'success',
+        paymentDate: new Date().toISOString()
+      };
+      
+      if (existingPaymentIndex >= 0) {
+        userPayments[existingPaymentIndex] = paymentRefObj;
+      } else {
+        userPayments.push(paymentRefObj);
+      }
+      
+      await userRef.update({ payments: userPayments });
+      console.log(`[PAYMENT] Payment successfully recorded and linked to user`);
+      
+      return NextResponse.json({ 
+        status: 'success',
+        paymentId: paymentId,
+        message: 'Payment verified and recorded successfully'
+      });
+      
+    } else {
+      console.warn(`[PAYMENT] Payment verification failed: ${JSON.stringify(flwData)}`);
+      return NextResponse.json({ 
+        error: 'Payment not successful', 
+        details: flwData 
+      }, { status: 400 });
+    }
+  } catch (e) {
+    console.error('[PAYMENT] Payment verification error:', e);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: e.message 
+    }, { status: 500 });
+  }
+}
       
       const paymentRefObj = {
         id: paymentId,

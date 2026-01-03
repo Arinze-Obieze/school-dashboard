@@ -30,7 +30,9 @@ export default function StepExaminationDetails({ formData, handleChange }) {
         <div>
           <CourseSelect
             value={formData.course}
-            onChange={handleChange}
+            onChange={(selectedCourse) => handleChange({
+              target: { name: 'course', value: selectedCourse }
+            })}
             required
           />
         </div>
