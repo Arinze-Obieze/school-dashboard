@@ -142,7 +142,7 @@ export default function SignupPage() {
     setLoading(false);
   };
 
-  // Step 3: Upload photo
+  // Step 3: Upload photo (MANDATORY - cannot be skipped)
   const handlePhotoSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
@@ -150,6 +150,13 @@ export default function SignupPage() {
     setLoading(true);
     
     try {
+      // Validate that photo file is selected
+      if (!form.photo) {
+        setError('Please select a photo before proceeding. Photo upload is mandatory.');
+        setLoading(false);
+        return;
+      }
+
       const fileValidation = validateFile(form.photo);
       if (!fileValidation.isValid) {
         setError(fileValidation.error);
@@ -160,10 +167,15 @@ export default function SignupPage() {
       console.log('Starting photo upload to Firebase Storage...');
       const uploadedPhotoURL = await uploadToFirebaseStorage(form.photo, userId);
       
+      if (!uploadedPhotoURL) {
+        throw new Error('Photo upload returned no URL. Please try again.');
+      }
+
       await setDoc(doc(db, 'users', userId), {
         photoURL: uploadedPhotoURL,
         emailVerified: true,
         profileCompleted: true,
+        photoUploadedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }, { merge: true });
 

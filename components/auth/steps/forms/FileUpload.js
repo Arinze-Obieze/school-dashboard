@@ -9,7 +9,11 @@ export const FileUpload = ({
   }) => {
     return (
       <div className="flex flex-col gap-4">
-        <label className="text-white text-sm">{label}{required && '*'}</label>
+        <label className="text-white text-sm font-semibold">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-red-500 text-xs ml-2">(Mandatory)</span>}
+        </label>
         <input 
           name={name} 
           type="file" 

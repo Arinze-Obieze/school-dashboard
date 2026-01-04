@@ -20,8 +20,10 @@ export const useSignupSteps = (userId) => {
           if (data.paymentStatus === 'success') {
             setStep(STEPS.COMPLETE);
           } else if (data.photoURL) {
+            // Photo is uploaded, allow progression to payment
             setStep(STEPS.PAYMENT);
           }
+          // Note: If no photoURL exists, user stays at PHOTO_UPLOAD step
         }
       } catch (e) {
         console.error('Error checking payment status:', e);
@@ -32,7 +34,13 @@ export const useSignupSteps = (userId) => {
   }, [userId]);
 
   const goToStep = (newStep) => {
+    // Prevent skipping to payment without photo upload
+    if (newStep === STEPS.PAYMENT && step < STEPS.PHOTO_UPLOAD) {
+      console.warn('Cannot skip photo upload step');
+      return false;
+    }
     setStep(newStep);
+    return true;
   };
 
   const nextStep = () => {
