@@ -2,10 +2,20 @@ import { getR2Client, R2Config } from '@/lib/r2Client';
 import { NextResponse } from 'next/server';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { validateFile } from '@/lib/fileValidator';
 
 export const runtime = 'nodejs';
 
 const RATE_LIMIT = 10; // 10 requests per minute for file uploads
+
+// File validation config per field
+const FIELD_CONFIG = {
+  degreeCertificates: { category: 'document', maxSize: 10 * 1024 * 1024 },
+  trainingCertificate: { category: 'document', maxSize: 10 * 1024 * 1024 },
+  workExperienceProof: { category: 'document', maxSize: 10 * 1024 * 1024 },
+  cpdCertificates: { category: 'document', maxSize: 10 * 1024 * 1024 },
+  passportPhoto: { category: 'image', maxSize: 5 * 1024 * 1024 },
+};
 
 async function POST(req) {
   // Apply rate limiting
@@ -20,18 +30,21 @@ async function POST(req) {
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
-    const fileFields = [
-      'degreeCertificates',
-      'trainingCertificate',
-      'workExperienceProof',
-      'cpdCertificates',
-      'passportPhoto',
-    ];
+    const fileFields = Object.keys(FIELD_CONFIG);
     const s3 = getR2Client();
     const uploadedUrls = {};
+    const validationErrors = [];
+
     for (const field of fileFields) {
       const file = formData.get(field);
       if (file && typeof file === 'object' && file.size > 0) {
+        // Validate file before upload
+        const config = FIELD_CONFIG[field];
+        const validation = validateFile(file, { category: config.category, maxSize: config.maxSize });
+        if (!validation.valid) {
+          validationErrors.push(`${field}: ${validation.error}`);
+          continue;
+        }
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const key = `${userId}/membership-registration/${field}-${Date.now()}-${file.name}`;
@@ -44,6 +57,16 @@ async function POST(req) {
         uploadedUrls[field] = `${R2Config.CLOUDFLARE_R2_PUBLIC_URL}/${key}`;
       }
     }
+
+    // Return validation errors if any
+    if (validationErrors.length > 0) {
+      return NextResponse.json({
+        urls: uploadedUrls,
+        validationErrors: validationErrors,
+        warning: 'Some files failed validation and were not uploaded'
+      });
+    }
+
     const response = NextResponse.json({ urls: uploadedUrls });
     // Add rate limit headers
     Object.entries(rateLimitResult.headers).forEach(([key, value]) => {

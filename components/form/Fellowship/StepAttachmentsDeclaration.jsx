@@ -1,19 +1,41 @@
 'use client'
-import { FaPaperclip, FaCheck, FaUpload } from 'react-icons/fa';
+import { FaPaperclip, FaCheck, FaUpload, FaExclamationTriangle } from 'react-icons/fa';
+import { useState } from 'react';
+import { useFileValidation } from '@/hooks/useFileValidation';
 
 export default function StepAttachmentsDeclaration({ 
   formData, 
   handleChange, 
   handleFileChange 
 }) {
+  const { errors, warnings, validateSingleFile, clearFieldError } = useFileValidation();
+  const [focusedField, setFocusedField] = useState(null);
+
   const attachmentFields = [
-    { id: 'mwccpsCertificate', label: 'MWCCPS Certificate' },
-    { id: 'trainingCertificates', label: 'Professional Training Certificates' },
-    { id: 'employmentLetters', label: 'Employment Verification Letters' },
-    { id: 'publishedPapers', label: 'Published Papers (Minimum 2)' },
-    { id: 'conferenceCertificates', label: 'Conference Certificates' },
-    { id: 'passportPhotos', label: 'Passport Photos (2)' },
+    { id: 'mwccpsCertificate', label: 'MWCCPS Certificate', category: 'document' },
+    { id: 'trainingCertificates', label: 'Professional Training Certificates', category: 'document' },
+    { id: 'employmentLetters', label: 'Employment Verification Letters', category: 'document' },
+    { id: 'publishedPapers', label: 'Published Papers (Minimum 2)', category: 'document' },
+    { id: 'conferenceCertificates', label: 'Conference Certificates', category: 'document' },
+    { id: 'passportPhotos', label: 'Passport Photos (2)', category: 'image' },
   ];
+
+  const handleFileChangeWithValidation = (e) => {
+    const { name, files } = e.target;
+    const file = files?.[0];
+    
+    if (file) {
+      const field = attachmentFields.find(f => f.id === name);
+      const isValid = validateSingleFile(file, name, { 
+        category: field?.category || 'document',
+        maxSize: field?.category === 'image' ? 5 * 1024 * 1024 : 10 * 1024 * 1024
+      });
+      
+      if (isValid) {
+        handleFileChange(e);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -28,8 +50,8 @@ export default function StepAttachmentsDeclaration({
         
         <div className="space-y-4">
           {attachmentFields.map((field) => (
-            <div key={field.id} className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex-1">
+            <div key={field.id} className="flex flex-col sm:flex-row sm:items-start gap-4">
+              <div className="flex-1 w-full">
                 <label htmlFor={field.id} className="block text-sm font-medium text-gray-300 mb-1">
                   {field.label}
                   <span className="text-red-500 ml-1">*</span>
@@ -39,25 +61,44 @@ export default function StepAttachmentsDeclaration({
                     type="file"
                     id={field.id}
                     name={field.id}
-                    onChange={handleFileChange}
+                    onChange={handleFileChangeWithValidation}
+                    onFocus={() => setFocusedField(field.id)}
+                    onBlur={() => setFocusedField(null)}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     required
                   />
-                  <div className="flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg p-3 hover:border-blue-400 transition-colors">
+                  <div className={`flex items-center justify-between rounded-lg p-3 transition-colors border ${
+                    errors[field.id] 
+                      ? 'bg-red-900/20 border-red-500' 
+                      : 'bg-gray-700 border-gray-600 hover:border-blue-400'
+                  }`}>
                     <div className="flex items-center">
-                      <FaUpload className="text-blue-400 mr-2" />
-                      <span className="text-gray-300 text-sm">
+                      <FaUpload className={`mr-2 ${errors[field.id] ? 'text-red-400' : 'text-blue-400'}`} />
+                      <span className={`text-sm ${errors[field.id] ? 'text-red-300' : 'text-gray-300'}`}>
                         {formData[field.id]?.name || 'Choose file...'}
                       </span>
                     </div>
-                    <span className="text-xs text-gray-500">PDF, JPG, PNG</span>
+                    <span className="text-xs text-gray-500">
+                      {field.category === 'image' ? 'JPG, PNG' : 'PDF, DOC, DOCX'}
+                    </span>
                   </div>
                 </div>
+                
+                {/* Validation Error */}
+                {errors[field.id] && (
+                  <div className="mt-2 flex items-start gap-2 bg-red-900/20 border border-red-500 rounded p-2">
+                    <FaExclamationTriangle className="text-red-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-red-300">
+                      {errors[field.id]}
+                    </div>
+                  </div>
+                )}
               </div>
-              {formData[field.id] && (
-                <div className="flex items-center justify-center sm:justify-start bg-green-900/30 text-green-400 rounded-lg px-4 py-3 sm:w-32">
+              
+              {formData[field.id] && !errors[field.id] && (
+                <div className="flex items-center justify-center sm:justify-start bg-green-900/30 text-green-400 rounded-lg px-4 py-3 sm:w-32 mt-8 sm:mt-0">
                   <FaCheck className="mr-1" />
-                  Uploaded
+                  Validated
                 </div>
               )}
             </div>

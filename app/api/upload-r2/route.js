@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { validateFile } from '@/lib/fileValidator';
 
 export const runtime = 'nodejs';
 
@@ -19,6 +20,12 @@ async function POST(req) {
     const userId = formData.get('userId');
     if (!file || !userId) {
       return NextResponse.json({ error: 'Missing file or userId' }, { status: 400 });
+    }
+
+    // Validate file type and size
+    const validation = validateFile(file, { category: 'image', maxSize: 5 * 1024 * 1024 });
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
     // Use correct env variable names from .env.local
     const R2_ACCOUNT_ID = process.env.CLOUDFLARE_R2_ACCOUNT_ID;
