@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/firebaseAdmin';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
-export async function POST(req) {
+const RATE_LIMIT = 15; // 15 requests per minute for payment verification
+
+async function POST(req) {
+  // Apply rate limiting
+  const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult;
+  }
+
   try {
     const { transaction_id, tx_ref, userId, paymentType = 'registration' } = await req.json();
     
@@ -125,11 +134,16 @@ export async function POST(req) {
       await userRef.update({ payments: userPayments });
       console.log(`[PAYMENT] Payment successfully recorded and linked to user`);
       
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         status: 'success',
         paymentId: paymentId,
         message: 'Payment verified and recorded successfully'
       });
+      // Add rate limit headers
+      Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+        response.headers.set(key, value);
+      });
+      return response;
       
     } else {
       console.warn(`[PAYMENT] Payment verification failed: ${JSON.stringify(flwData)}`);
@@ -146,3 +160,5 @@ export async function POST(req) {
     }, { status: 500 });
   }
 }
+
+export { POST };

@@ -1,10 +1,19 @@
 import { getR2Client, R2Config } from '@/lib/r2Client';
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
-export async function POST(req) {
+const RATE_LIMIT = 10; // 10 requests per minute for file deletion
+
+async function POST(req) {
+  // Apply rate limiting
+  const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult;
+  }
+
   try {
     const { url, userId } = await req.json();
     if (!url || !userId) {
@@ -21,9 +30,16 @@ export async function POST(req) {
       Bucket: R2Config.CLOUDFLARE_R2_BUCKET,
       Key: key,
     }));
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+    // Add rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
   } catch (e) {
     console.error('Delete failed:', e);
     return NextResponse.json({ error: 'Delete failed', details: e.message }, { status: 500 });
   }
 }
+
+export { POST };

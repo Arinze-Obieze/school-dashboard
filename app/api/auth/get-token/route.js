@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
@@ -20,6 +21,8 @@ if (!getApps().length) {
   });
 }
 
+const RATE_LIMIT = 10; // 10 requests per minute for token generation
+
 /**
  * POST /api/auth/get-token
  * 
@@ -38,7 +41,13 @@ if (!getApps().length) {
  *   usage: string (how to use the token)
  * }
  */
-export async function POST(req) {
+async function POST(req) {
+  // Apply rate limiting
+  const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult;
+  }
+
   try {
     let body;
     try {
@@ -76,7 +85,7 @@ export async function POST(req) {
       role: user.customClaims?.role || 'user',
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         token: customToken,
@@ -89,6 +98,11 @@ export async function POST(req) {
       },
       { status: 200 }
     );
+    // Add rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
   } catch (error) {
     console.error('[GET-TOKEN] Error:', error);
     return NextResponse.json(
@@ -103,7 +117,13 @@ export async function POST(req) {
  * 
  * Alternative GET method for token generation
  */
-export async function GET(req) {
+async function GET(req) {
+  // Apply rate limiting
+  const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult;
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get('email');
@@ -132,7 +152,7 @@ export async function GET(req) {
       role: user.customClaims?.role || 'user',
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         token: customToken,
@@ -144,6 +164,11 @@ export async function GET(req) {
       },
       { status: 200 }
     );
+    // Add rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
   } catch (error) {
     console.error('[GET-TOKEN] Error:', error);
     return NextResponse.json(
@@ -152,3 +177,5 @@ export async function GET(req) {
     );
   }
 }
+
+export { POST, GET };

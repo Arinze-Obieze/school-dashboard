@@ -1,10 +1,19 @@
 import { getR2Client, R2Config } from '@/lib/r2Client';
 import { NextResponse } from 'next/server';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
-export async function POST(req) {
+const RATE_LIMIT = 10; // 10 requests per minute for file uploads
+
+async function POST(req) {
+  // Apply rate limiting
+  const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult;
+  }
+
   try {
     const formData = await req.formData();
     const userId = formData.get('userId');
@@ -36,9 +45,16 @@ export async function POST(req) {
         uploadedUrls[field] = `${R2Config.CLOUDFLARE_R2_PUBLIC_URL}/${key}`;
       }
     }
-    return NextResponse.json({ urls: uploadedUrls });
+    const response = NextResponse.json({ urls: uploadedUrls });
+    // Add rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
   } catch (e) {
     console.error('Fellowship multi-file upload failed:', e);
     return NextResponse.json({ error: 'Upload failed', details: e.message }, { status: 500 });
   }
 }
+
+export { POST };

@@ -1,9 +1,18 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
-export async function POST(req) {
+const RATE_LIMIT = 10; // 10 requests per minute for file upload
+
+async function POST(req) {
+  // Apply rate limiting
+  const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult;
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get('file');
@@ -45,9 +54,16 @@ export async function POST(req) {
       ContentType: contentType,
     }));
     const url = `${R2_PUBLIC_URL}/${userId}/user_photo`;
-    return NextResponse.json({ url });
+    const response = NextResponse.json({ url });
+    // Add rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
   } catch (e) {
     console.error('Upload failed:', e);
     return NextResponse.json({ error: 'Upload failed', details: e.message }, { status: 500 });
   }
 }
+
+export { POST };

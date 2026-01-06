@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/firebaseAdmin';
+import { checkRateLimit } from '@/lib/rateLimit';
 
-export async function GET(req) {
+const RATE_LIMIT = 20; // 20 requests per minute for payment fetching
+
+async function GET(req) {
+  // Apply rate limiting
+  const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult;
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
@@ -20,10 +29,17 @@ export async function GET(req) {
       payments.push({ id: doc.id, ...doc.data() });
     });
 
-    return NextResponse.json({ payments });
+    const response = NextResponse.json({ payments });
+    // Add rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
     
   } catch (error) {
     console.error('Error fetching user payments:', error);
     return NextResponse.json({ error: 'Failed to fetch payments' }, { status: 500 });
   }
 }
+
+export { GET };

@@ -1,4 +1,14 @@
-export async function GET(request) {
+import { checkRateLimit } from '@/lib/rateLimit';
+import { NextResponse } from 'next/server';
+
+const RATE_LIMIT = 15; // 15 requests per minute for exam fetching
+
+async function GET(request) {
+  // Apply rate limiting
+  const rateLimitResult = await checkRateLimit(request, RATE_LIMIT);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult;
+  }
 
   try {
     const { searchParams } = new URL(request.url);
@@ -37,7 +47,12 @@ console.error('External API error', {
 
     const data = await res.json();
 
-    return Response.json(data);
+    const response = Response.json(data);
+    // Add rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
 
   } catch (error) {
     return Response.json(
@@ -46,3 +61,5 @@ console.error('External API error', {
     );
   }
 }
+
+export { GET };

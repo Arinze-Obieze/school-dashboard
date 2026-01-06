@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/firebaseAdmin';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
-export async function GET(req) {
+const RATE_LIMIT = 20; // 20 requests per minute for fetching registrations
+
+async function GET(req) {
+  // Apply rate limiting
+  const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult;
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
@@ -16,8 +25,15 @@ export async function GET(req) {
       return NextResponse.json({ exists: false });
     }
     const doc = snapshot.docs[0];
-    return NextResponse.json({ exists: true, data: doc.data() });
+    const response = NextResponse.json({ exists: true, data: doc.data() });
+    // Add rate limit headers
+    Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
+
+export { GET };
