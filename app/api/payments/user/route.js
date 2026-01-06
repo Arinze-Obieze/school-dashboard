@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/firebaseAdmin';
 import { checkRateLimit } from '@/lib/rateLimit';
+import {
+  parsePaginationParams,
+  formatPaginationResponse,
+  formatErrorResponse,
+  getTotalCount,
+  extractFirestoreData,
+} from '@/lib/paginationHelper';
 
 const RATE_LIMIT = 20; // 20 requests per minute for payment fetching
 
@@ -14,22 +21,49 @@ async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
+    const page = searchParams.get('page');
+    const limit = searchParams.get('limit');
     
     if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+      return NextResponse.json(
+        formatErrorResponse('User ID required', 400),
+        { status: 400 }
+      );
     }
 
-    const paymentsSnapshot = await adminDb.collection('payments')
+    // Parse and validate pagination parameters
+    const { page: pageNum, limit: limitNum, skip } = parsePaginationParams(
+      page,
+      limit,
+      'payments'
+    );
+
+    // Build base query
+    const baseQuery = adminDb
+      .collection('payments')
       .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
+      .orderBy('createdAt', 'desc');
+
+    // Get total count
+    const total = await getTotalCount(baseQuery);
+
+    // Fetch paginated data
+    const paymentsSnapshot = await baseQuery
+      .offset(skip)
+      .limit(limitNum)
       .get();
 
-    const payments = [];
-    paymentsSnapshot.forEach(doc => {
-      payments.push({ id: doc.id, ...doc.data() });
-    });
+    const payments = extractFirestoreData(paymentsSnapshot);
 
-    const response = NextResponse.json({ payments });
+    const responseData = formatPaginationResponse(
+      payments,
+      pageNum,
+      limitNum,
+      total,
+      { source: 'firestore', endpoint: 'payments/user' }
+    );
+
+    const response = NextResponse.json(responseData);
     // Add rate limit headers
     Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
       response.headers.set(key, value);
@@ -38,7 +72,11 @@ async function GET(req) {
     
   } catch (error) {
     console.error('Error fetching user payments:', error);
-    return NextResponse.json({ error: 'Failed to fetch payments' }, { status: 500 });
+    const responseData = formatErrorResponse(
+      'Failed to fetch payments',
+      500
+    );
+    return NextResponse.json(responseData, { status: 500 });
   }
 }
 

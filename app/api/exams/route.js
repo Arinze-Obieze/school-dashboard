@@ -1,5 +1,11 @@
 import { checkRateLimit } from '@/lib/rateLimit';
 import { NextResponse } from 'next/server';
+import {
+  parsePaginationParams,
+  handleExternalPagination,
+  buildExternalPaginationParams,
+  formatErrorResponse,
+} from '@/lib/paginationHelper';
 
 const RATE_LIMIT = 15; // 15 requests per minute for exam fetching
 
@@ -13,41 +19,76 @@ async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const studentId = searchParams.get('studentId');
+    const page = searchParams.get('page');
+    const limit = searchParams.get('limit');
 
     if (!studentId) {
       return Response.json(
-        { error: 'studentId is required' },
+        formatErrorResponse('studentId is required', 400),
         { status: 400 }
       );
     }
 
-    const apiUrl = `https://api.waccps.org/quiz?studentId=${studentId}`;
+    // Parse pagination parameters
+    const { page: pageNum, limit: limitNum } = parsePaginationParams(
+      page,
+      limit,
+      'exams'
+    );
+
+    // Build external API params (adapt to API's pagination style)
+    const paginationParams = buildExternalPaginationParams(
+      pageNum,
+      limitNum,
+      'offset' // Adjust based on actual API pagination style
+    );
+
+    // Build API URL with pagination
+    const params = new URLSearchParams({
+      studentId,
+      ...paginationParams,
+    });
+    const apiUrl = `https://api.waccps.org/quiz?${params.toString()}`;
 
     const res = await fetch(apiUrl, {
       method: 'GET',
-    headers: {
-  'authentication-key': process.env.WACCPS_API_KEY
-} 
-   });
+      headers: {
+        'authentication-key': process.env.WACCPS_API_KEY,
+      },
+    });
 
     if (!res.ok) {
-  const errorText = await res.text();
-console.error('External API error', {
-  studentId,
-  status: res.status,
-  errorText,
-  apiUrl
-})
+      const errorText = await res.text();
+      console.error('External API error', {
+        studentId,
+        status: res.status,
+        errorText,
+        apiUrl,
+      });
 
-  return Response.json(
-    { error: 'Failed to fetch exams', details: errorText },
-    { status: res.status }
-  );
-}
+      const errorResponse = formatErrorResponse(
+        'Failed to fetch exams',
+        res.status
+      );
+      return Response.json(errorResponse, { status: res.status });
+    }
 
     const data = await res.json();
 
-    const response = Response.json(data);
+    // Adapt response to standardized format
+    // Assuming API returns { quizzes: [...], total?: number }
+    const exams = Array.isArray(data) ? data : data.quizzes || [];
+    const total = data.total || data.totalCount || exams.length;
+
+    const responseData = handleExternalPagination(
+      exams,
+      pageNum,
+      limitNum,
+      total
+    );
+    responseData.meta.apiUrl = apiUrl;
+
+    const response = Response.json(responseData);
     // Add rate limit headers
     Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
       response.headers.set(key, value);
@@ -55,10 +96,12 @@ console.error('External API error', {
     return response;
 
   } catch (error) {
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
+    console.error('Error fetching exams:', error);
+    const errorResponse = formatErrorResponse(
+      error.message || 'Failed to fetch exams',
+      500
     );
+    return Response.json(errorResponse, { status: 500 });
   }
 }
 

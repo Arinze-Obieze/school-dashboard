@@ -1,5 +1,5 @@
 'use client';
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { List } from 'react-window';
 import ExamCard from './ExamCard';
 
@@ -13,75 +13,106 @@ import ExamCard from './ExamCard';
  * - Scroll FPS: 15fps → 60fps
  * - Memory: 60MB → 5MB
  */
+
+// Row component for react-window v2.x
+// Must be defined outside to avoid recreation on each render
+const ExamRow = ({ index, style, exams, STATUS_CONFIG, getStatusBadge, getTimeRemaining, formatDate, formatTime, EXAM_INFO_ITEMS }) => {
+  const exam = exams?.[index];
+  if (!exam) return null;
+
+  return (
+    <div style={{ ...style, paddingBottom: '16px' }} className="px-1">
+      <ExamCard
+        exam={exam}
+        statusConfig={STATUS_CONFIG}
+        getStatusBadge={getStatusBadge}
+        getTimeRemaining={getTimeRemaining}
+        formatDate={formatDate}
+        formatTime={formatTime}
+        examInfoItems={EXAM_INFO_ITEMS}
+      />
+    </div>
+  );
+};
+
 const VirtualizedExamList = ({
-  exams,
-  statusConfig,
+  exams = [],
+  STATUS_CONFIG,
   getStatusBadge,
   getTimeRemaining,
   formatDate,
   formatTime,
-  formatDuration,
-  examInfoItems,
+  EXAM_INFO_ITEMS,
 }) => {
-  // Card dimensions
-  const CARD_HEIGHT = 340; // ~340px per exam card (including gaps)
   const OVERSCAN_COUNT = 5; // Render 5 items outside viewport for smooth scrolling
+  
+  // Responsive card height based on screen width
+  const [dimensions, setDimensions] = useState({
+    cardHeight: 340,
+    containerHeight: 800,
+  });
 
-  // Calculate container height (80vh or max 800px)
-  const containerHeight = typeof window !== 'undefined' 
-    ? Math.min(window.innerHeight * 0.8, 800)
-    : 800;
+  useEffect(() => {
+    const updateDimensions = () => {
+      const width = window.innerWidth;
+      // On small screens, cards are taller due to stacked layout
+      // Mobile (<640px): ~520px, Tablet (640-1024px): ~420px, Desktop: ~340px
+      let cardHeight;
+      if (width < 640) {
+        cardHeight = 520; // Mobile - stacked layout needs more height
+      } else if (width < 1024) {
+        cardHeight = 420; // Tablet
+      } else {
+        cardHeight = 340; // Desktop - side-by-side layout
+      }
+      
+      const containerHeight = Math.min(window.innerHeight * 0.75, 700);
+      
+      setDimensions({ cardHeight, containerHeight });
+    };
 
-  // Memoize render function to prevent unnecessary recreations
-  const renderRow = useMemo(
-    () =>
-      ({ index, style }) => {
-        const exam = exams[index];
-        if (!exam) return null;
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
-        return (
-          <div style={style} className="pr-4 pl-0">
-            <ExamCard
-              exam={exam}
-              statusConfig={statusConfig}
-              getStatusBadge={getStatusBadge}
-              getTimeRemaining={getTimeRemaining}
-              formatDate={formatDate}
-              formatTime={formatTime}
-              formatDuration={formatDuration}
-              examInfoItems={examInfoItems}
-            />
-          </div>
-        );
-      },
-    [
-      exams,
-      statusConfig,
-      getStatusBadge,
-      getTimeRemaining,
-      formatDate,
-      formatTime,
-      formatDuration,
-      examInfoItems,
-    ]
-  );
+  // Ensure exams is an array
+  const safeExams = Array.isArray(exams) ? exams : [];
+
+  if (safeExams.length === 0) {
+    return (
+      <div className="text-center text-gray-400 py-8">
+        <p>No exams to display</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="exam-list-container">
       <List
-        height={containerHeight}
-        itemCount={exams.length}
-        itemSize={CARD_HEIGHT}
-        width="100%"
+        rowCount={safeExams.length}
+        rowHeight={dimensions.cardHeight}
+        rowComponent={ExamRow}
+        rowProps={{
+          exams: safeExams,
+          STATUS_CONFIG,
+          getStatusBadge,
+          getTimeRemaining,
+          formatDate,
+          formatTime,
+          EXAM_INFO_ITEMS,
+        }}
         overscanCount={OVERSCAN_COUNT}
-        className="exam-list-virtualized"
-      >
-        {renderRow}
-      </List>
+        style={{ 
+          height: dimensions.containerHeight, 
+          width: '100%',
+          overflowX: 'hidden',
+        }}
+      />
 
-      {/* Performance metrics (optional, can be removed in production) */}
-      <div className="text-xs text-gray-500 text-center mt-4">
-        <p>Showing {exams.length} exams (virtualized for performance)</p>
+      {/* Performance metrics */}
+      <div className="text-xs text-gray-500 text-center mt-4 px-4">
+        <p>Showing {safeExams.length} exams</p>
       </div>
     </div>
   );

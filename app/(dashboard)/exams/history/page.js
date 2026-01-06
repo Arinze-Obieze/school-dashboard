@@ -120,6 +120,9 @@ const ExamPortalPage = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [user, setUser] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const [allExams, setAllExams] = useState([]);
 
   // Update current time every minute
   useEffect(() => {
@@ -180,28 +183,43 @@ const ExamPortalPage = () => {
   }, [currentTime]);
 
   // Fetch exams from API
-  const fetchExams = useCallback(async (studentId) => {
+  const fetchExams = useCallback(async (studentId, page = 1) => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await fetch(`/api/exams?studentId=${studentId}`);
+      const response = await fetch(`/api/exams?studentId=${studentId}&page=${page}&limit=50`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `API returned ${response.status}`);
       }
 
-      const data = await response.json();
+      const responseData = await response.json();
       
-      if (!Array.isArray(data)) {
-        console.warn('API returned non-array data:', data);
+      // Handle new pagination response format
+      let examsData = [];
+      let paginationData = null;
+
+      if (responseData.success && responseData.data) {
+        // New paginated format
+        examsData = responseData.data;
+        paginationData = responseData.pagination;
+        setPagination(paginationData);
+      } else if (Array.isArray(responseData)) {
+        // Legacy format (fallback)
+        examsData = responseData;
+      } else if (responseData.data && Array.isArray(responseData.data)) {
+        // Alternative format
+        examsData = responseData.data;
+      } else {
+        console.warn('API returned unexpected data format:', responseData);
         setExams([]);
         return;
       }
       
       // Transform exam data
-      const transformedExams = data.map((exam, index) => ({
+      const transformedExams = examsData.map((exam, index) => ({
         id: exam.quiz_id?.toString() || `exam-${index}`,
         exam_id: exam.quiz_id,
         title: exam.title || 'Untitled Exam',
@@ -231,6 +249,7 @@ const ExamPortalPage = () => {
       }));
       
       setExams(transformedExams);
+      setAllExams(transformedExams); // Store all current page exams
       
     } catch (err) {
       console.error('Error fetching exams:', err);
@@ -567,6 +586,48 @@ const count =
             />
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {pagination && pagination.pages > 1 && (
+          <div className="mt-8 flex items-center justify-between gap-4 flex-wrap">
+            <button
+              onClick={() => {
+                if (pagination.prevPage && user) {
+                  setCurrentPage(pagination.prevPage);
+                  fetchExams(user.uid, pagination.prevPage);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              disabled={!pagination.prevPage}
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium transition-colors"
+            >
+              ← Previous
+            </button>
+            
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <span>Page {pagination.page} of {pagination.pages}</span>
+              {pagination.total > 0 && (
+                <span className="text-gray-500">
+                  ({Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)}-{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total})
+                </span>
+              )}
+            </div>
+            
+            <button
+              onClick={() => {
+                if (pagination.nextPage && user) {
+                  setCurrentPage(pagination.nextPage);
+                  fetchExams(user.uid, pagination.nextPage);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              disabled={!pagination.nextPage}
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+        )}
 
         {/* Footer Note */}
         <div className="mt-8 text-center text-gray-500 text-xs sm:text-sm">
