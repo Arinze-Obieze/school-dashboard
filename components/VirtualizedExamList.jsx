@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import { FixedSizeList } from 'react-window';
+import { List } from 'react-window';
 import ExamCard from './ExamCard';
 
 /**
@@ -68,7 +68,7 @@ const VirtualizedExamList = ({
 
   return (
     <div className="space-y-4">
-      <FixedSizeList
+      <List
         height={containerHeight}
         itemCount={exams.length}
         itemSize={CARD_HEIGHT}
@@ -77,7 +77,7 @@ const VirtualizedExamList = ({
         className="exam-list-virtualized"
       >
         {renderRow}
-      </FixedSizeList>
+      </List>
 
       {/* Performance metrics (optional, can be removed in production) */}
       <div className="text-xs text-gray-500 text-center mt-4">
