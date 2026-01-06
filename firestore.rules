@@ -84,6 +84,24 @@ service cloud.firestore {
       allow read, write: if request.auth.token.role == "superadmin";
     }
 
+    // ✅ Payment Audit Logs collection (for debugging/monitoring - superadmin only)
+    match /payment-audit-logs/{logId} {
+      // No client writes allowed - all writes via Admin SDK (server-side only)
+      allow create, update, delete: if false;
+      
+      // Only superadmins can read audit logs
+      allow read: if request.auth != null && request.auth.token.role == "superadmin";
+    }
+
+    // ✅ Admin Audit Logs collection (existing pattern)
+    match /admin-audit-logs/{logId} {
+      // No client writes allowed - all writes via Admin SDK
+      allow create, update, delete: if false;
+      
+      // Only superadmins can read admin audit logs
+      allow read: if request.auth != null && request.auth.token.role == "superadmin";
+    }
+
     // ❌ Deny all other access
     match /{document=**} {
       allow read, write: if false;

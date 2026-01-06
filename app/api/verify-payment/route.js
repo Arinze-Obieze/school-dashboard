@@ -1,24 +1,64 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/firebaseAdmin';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { 
+  logPaymentAudit, 
+  createAuditContext, 
+  PAYMENT_AUDIT_ACTIONS 
+} from '@/lib/paymentAudit';
 
 export const runtime = 'nodejs';
 
 const RATE_LIMIT = 15; // 15 requests per minute for payment verification
 
 async function POST(req) {
+  // Create audit context early for all logging
+  const auditContext = createAuditContext(req);
+  
   // Apply rate limiting
   const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
   if (!rateLimitResult.allowed) {
+    // Log rate limit exceeded
+    logPaymentAudit({
+      action: PAYMENT_AUDIT_ACTIONS.RATE_LIMIT_EXCEEDED,
+      success: false,
+      errorMessage: 'Rate limit exceeded for payment verification',
+      ...auditContext,
+    });
     return rateLimitResult;
   }
 
+  let parsedBody = {};
+  
   try {
-    const { transaction_id, tx_ref, userId, paymentType = 'registration' } = await req.json();
+    parsedBody = await req.json();
+    const { transaction_id, tx_ref, userId, paymentType = 'registration' } = parsedBody;
     
     if (!transaction_id || !userId || !tx_ref) {
+      // Log validation error
+      logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.VERIFY_VALIDATION_ERROR,
+        success: false,
+        errorMessage: 'Missing required fields: transaction_id, userId, or tx_ref',
+        metadata: { 
+          hasTransactionId: !!transaction_id, 
+          hasUserId: !!userId, 
+          hasTxRef: !!tx_ref 
+        },
+        ...auditContext,
+      });
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+    
+    // Log verification initiated
+    logPaymentAudit({
+      action: PAYMENT_AUDIT_ACTIONS.VERIFY_INITIATED,
+      txRef: tx_ref,
+      transactionId: transaction_id,
+      userId,
+      paymentType,
+      ...auditContext,
+    });
     
     console.log(`[PAYMENT] Verifying payment: txRef=${tx_ref}, userId=${userId}, transactionId=${transaction_id}`);
     
@@ -26,22 +66,86 @@ async function POST(req) {
     const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY;
     const verifyUrl = `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`;
     
-    const flwRes = await fetch(verifyUrl, {
-      headers: {
-        Authorization: `Bearer ${FLW_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const flwStartTime = Date.now();
+    let flwRes;
+    try {
+      flwRes = await fetch(verifyUrl, {
+        headers: {
+          Authorization: `Bearer ${FLW_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (fetchError) {
+      const responseTime = Date.now() - flwStartTime;
+      // Log Flutterwave API network error
+      logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.FLUTTERWAVE_API_ERROR,
+        txRef: tx_ref,
+        transactionId: transaction_id,
+        userId,
+        paymentType,
+        success: false,
+        errorMessage: `Network error calling Flutterwave: ${fetchError.message}`,
+        errorCode: 'NETWORK_ERROR',
+        responseTime,
+        ...auditContext,
+      });
+      throw fetchError;
+    }
+    
+    const flwResponseTime = Date.now() - flwStartTime;
     
     if (!flwRes.ok) {
+      // Log Flutterwave API HTTP error
+      logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.FLUTTERWAVE_API_ERROR,
+        txRef: tx_ref,
+        transactionId: transaction_id,
+        userId,
+        paymentType,
+        success: false,
+        errorMessage: `Flutterwave API error: ${flwRes.status}`,
+        errorCode: `HTTP_${flwRes.status}`,
+        responseTime: flwResponseTime,
+        ...auditContext,
+      });
       throw new Error(`Flutterwave API error: ${flwRes.status}`);
     }
     
     const flwData = await flwRes.json();
+    
+    // Log successful Flutterwave API call
+    logPaymentAudit({
+      action: PAYMENT_AUDIT_ACTIONS.FLUTTERWAVE_API_SUCCESS,
+      txRef: tx_ref,
+      transactionId: transaction_id,
+      userId,
+      paymentType,
+      success: true,
+      flutterwaveResponse: flwData,
+      responseTime: flwResponseTime,
+      ...auditContext,
+    });
+    
     console.log(`[PAYMENT] Flutterwave response: ${JSON.stringify(flwData)}`);
     
     if (flwData.status === 'success' && flwData.data.status === 'successful') {
       if (flwData.data.tx_ref !== tx_ref) {
+        // Log transaction reference mismatch
+        logPaymentAudit({
+          action: PAYMENT_AUDIT_ACTIONS.VERIFY_TX_REF_MISMATCH,
+          txRef: tx_ref,
+          transactionId: transaction_id,
+          userId,
+          paymentType,
+          success: false,
+          errorMessage: 'Transaction reference mismatch',
+          metadata: {
+            expectedTxRef: tx_ref,
+            receivedTxRef: flwData.data.tx_ref,
+          },
+          ...auditContext,
+        });
         return NextResponse.json({ error: 'Transaction reference mismatch' }, { status: 400 });
       }
       
@@ -75,19 +179,90 @@ async function POST(req) {
       
       if (paymentsSnapshot.empty) {
         // Create new payment document
-        const paymentRef = await adminDb.collection('payments').add(paymentData);
-        paymentId = paymentRef.id;
-        console.log(`[PAYMENT] Created new payment record: ${paymentId}`);
+        try {
+          const paymentRef = await adminDb.collection('payments').add(paymentData);
+          paymentId = paymentRef.id;
+          console.log(`[PAYMENT] Created new payment record: ${paymentId}`);
+          
+          // Log successful payment creation
+          logPaymentAudit({
+            action: PAYMENT_AUDIT_ACTIONS.DB_WRITE_SUCCESS,
+            paymentId,
+            txRef: tx_ref,
+            transactionId: transaction_id,
+            userId,
+            paymentType,
+            amount: flwData.data.amount,
+            currency: flwData.data.currency,
+            previousStatus: null,
+            newStatus: 'success',
+            success: true,
+            metadata: { operation: 'create_new_payment' },
+            ...auditContext,
+          });
+        } catch (dbError) {
+          // Log database write failure
+          logPaymentAudit({
+            action: PAYMENT_AUDIT_ACTIONS.DB_WRITE_FAILED,
+            txRef: tx_ref,
+            transactionId: transaction_id,
+            userId,
+            paymentType,
+            amount: flwData.data.amount,
+            currency: flwData.data.currency,
+            success: false,
+            errorMessage: `Failed to create payment record: ${dbError.message}`,
+            metadata: { operation: 'create_new_payment' },
+            ...auditContext,
+          });
+          throw dbError;
+        }
       } else {
         // Update existing payment document
         const paymentDoc = paymentsSnapshot.docs[0];
         paymentId = paymentDoc.id;
+        const previousData = paymentDoc.data();
         const paymentRef = adminDb.collection('payments').doc(paymentId);
-        await paymentRef.update({
-          ...paymentData,
-          updatedAt: new Date().toISOString()
-        });
-        console.log(`[PAYMENT] Updated existing payment record: ${paymentId}`);
+        
+        try {
+          await paymentRef.update({
+            ...paymentData,
+            updatedAt: new Date().toISOString()
+          });
+          console.log(`[PAYMENT] Updated existing payment record: ${paymentId}`);
+          
+          // Log successful payment update with status change
+          logPaymentAudit({
+            action: PAYMENT_AUDIT_ACTIONS.STATUS_CHANGE,
+            paymentId,
+            txRef: tx_ref,
+            transactionId: transaction_id,
+            userId,
+            paymentType,
+            amount: flwData.data.amount,
+            currency: flwData.data.currency,
+            previousStatus: previousData.status,
+            newStatus: 'success',
+            success: true,
+            metadata: { operation: 'update_existing_payment' },
+            ...auditContext,
+          });
+        } catch (dbError) {
+          // Log database update failure
+          logPaymentAudit({
+            action: PAYMENT_AUDIT_ACTIONS.DB_UPDATE_FAILED,
+            paymentId,
+            txRef: tx_ref,
+            transactionId: transaction_id,
+            userId,
+            paymentType,
+            success: false,
+            errorMessage: `Failed to update payment record: ${dbError.message}`,
+            metadata: { operation: 'update_existing_payment' },
+            ...auditContext,
+          });
+          throw dbError;
+        }
       }
       
       // Update user document with payment status
@@ -100,11 +275,53 @@ async function POST(req) {
       };
       
       // Update or create user doc
-      if (userDoc.exists) {
-        await userRef.update(userUpdateData);
-      } else {
-        // Create user doc if it doesn't exist
-        await userRef.set(userUpdateData, { merge: true });
+      try {
+        if (userDoc.exists) {
+          await userRef.update(userUpdateData);
+          // Log user doc updated
+          logPaymentAudit({
+            action: PAYMENT_AUDIT_ACTIONS.USER_DOC_UPDATED,
+            paymentId,
+            txRef: tx_ref,
+            transactionId: transaction_id,
+            userId,
+            paymentType,
+            success: true,
+            metadata: { operation: 'update_user_doc' },
+            ...auditContext,
+          });
+        } else {
+          // Create user doc if it doesn't exist
+          await userRef.set(userUpdateData, { merge: true });
+          // Log user doc created
+          logPaymentAudit({
+            action: PAYMENT_AUDIT_ACTIONS.USER_DOC_CREATED,
+            paymentId,
+            txRef: tx_ref,
+            transactionId: transaction_id,
+            userId,
+            paymentType,
+            success: true,
+            metadata: { operation: 'create_user_doc' },
+            ...auditContext,
+          });
+        }
+      } catch (userDocError) {
+        // Log user doc update failure (non-blocking - payment was successful)
+        logPaymentAudit({
+          action: PAYMENT_AUDIT_ACTIONS.USER_DOC_UPDATE_FAILED,
+          paymentId,
+          txRef: tx_ref,
+          transactionId: transaction_id,
+          userId,
+          paymentType,
+          success: false,
+          errorMessage: `Failed to update user doc: ${userDocError.message}`,
+          metadata: { operation: userDoc.exists ? 'update_user_doc' : 'create_user_doc' },
+          ...auditContext,
+        });
+        // Don't throw - payment was successful, this is secondary
+        console.error(`[PAYMENT] Failed to update user doc but payment was successful: ${userDocError.message}`);
       }
       
       // Add payment reference to user's payments array
@@ -134,6 +351,22 @@ async function POST(req) {
       await userRef.update({ payments: userPayments });
       console.log(`[PAYMENT] Payment successfully recorded and linked to user`);
       
+      // Log overall verification success
+      logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.VERIFY_SUCCESS,
+        paymentId,
+        txRef: tx_ref,
+        transactionId: transaction_id,
+        userId,
+        paymentType,
+        amount: flwData.data.amount,
+        currency: flwData.data.currency,
+        newStatus: 'success',
+        success: true,
+        flutterwaveResponse: flwData,
+        ...auditContext,
+      });
+      
       const response = NextResponse.json({ 
         status: 'success',
         paymentId: paymentId,
@@ -147,6 +380,26 @@ async function POST(req) {
       
     } else {
       console.warn(`[PAYMENT] Payment verification failed: ${JSON.stringify(flwData)}`);
+      
+      // Log payment verification failed (Flutterwave returned non-successful status)
+      logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.VERIFY_FAILED,
+        txRef: tx_ref,
+        transactionId: transaction_id,
+        userId,
+        paymentType,
+        success: false,
+        errorMessage: `Payment not successful: ${flwData.data?.status || flwData.status}`,
+        errorCode: flwData.data?.status || 'PAYMENT_FAILED',
+        flutterwaveResponse: flwData,
+        metadata: {
+          flwStatus: flwData.status,
+          flwDataStatus: flwData.data?.status,
+          processorResponse: flwData.data?.processor_response,
+        },
+        ...auditContext,
+      });
+      
       return NextResponse.json({ 
         error: 'Payment not successful', 
         details: flwData 
@@ -154,6 +407,21 @@ async function POST(req) {
     }
   } catch (e) {
     console.error('[PAYMENT] Payment verification error:', e);
+    
+    // Log internal server error
+    logPaymentAudit({
+      action: PAYMENT_AUDIT_ACTIONS.VERIFY_FAILED,
+      txRef: parsedBody.tx_ref || null,
+      transactionId: parsedBody.transaction_id || null,
+      userId: parsedBody.userId || null,
+      paymentType: parsedBody.paymentType || null,
+      success: false,
+      errorMessage: e.message,
+      errorCode: 'INTERNAL_ERROR',
+      metadata: { stack: e.stack?.substring(0, 500) },
+      ...auditContext,
+    });
+    
     return NextResponse.json({ 
       error: 'Internal server error',
       message: e.message 
