@@ -2,6 +2,7 @@ import { getR2Client, R2Config } from '@/lib/r2Client';
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { validateUserId, validateUrl } from '@/lib/inputValidator';
 
 export const runtime = 'nodejs';
 
@@ -16,8 +17,24 @@ async function POST(req) {
 
   try {
     const { url, userId } = await req.json();
+    
     if (!url || !userId) {
       return NextResponse.json({ error: 'Missing url or userId' }, { status: 400 });
+    }
+
+    // Validate userId
+    const userIdValidation = validateUserId(userId);
+    if (!userIdValidation.valid) {
+      return NextResponse.json({ error: userIdValidation.error }, { status: 400 });
+    }
+
+    // Validate URL
+    const urlValidation = validateUrl(url, { 
+      allowedProtocols: ['https:'],
+      allowedDomains: [new URL(R2Config.CLOUDFLARE_R2_PUBLIC_URL).hostname]
+    });
+    if (!urlValidation.valid) {
+      return NextResponse.json({ error: urlValidation.error }, { status: 400 });
     }
     // Extract key from URL
     const publicPrefix = `${R2Config.CLOUDFLARE_R2_PUBLIC_URL}/`;

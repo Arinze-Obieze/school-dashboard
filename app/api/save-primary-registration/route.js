@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/firebaseAdmin';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { validateRegistrationData } from '@/lib/inputValidator';
 
 export const runtime = 'nodejs';
 
@@ -12,9 +13,20 @@ async function POST(req) {
   if (!rateLimitResult.allowed) {
     return rateLimitResult;
   }
+  
   try {
     const data = await req.json();
-    const { userId, ...registrationData } = data;
+    
+    // Validate and sanitize registration data
+    const validation = validateRegistrationData(data);
+    if (!validation.valid) {
+      return NextResponse.json({ 
+        error: 'Validation failed', 
+        details: validation.errors 
+      }, { status: 400 });
+    }
+
+    const { userId, ...registrationData } = validation.sanitized;
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }

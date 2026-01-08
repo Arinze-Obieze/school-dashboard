@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/firebaseAdmin';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { validatePaymentData } from '@/lib/inputValidator';
 import { 
   logPaymentAudit, 
   createAuditContext, 
@@ -30,7 +31,24 @@ async function POST(req) {
 
   try {
     parsedBody = await req.json();
-    const { userId, amount, paymentType, txRef, description, customerEmail, customerName } = parsedBody;
+    
+    // Validate and sanitize payment data
+    const validation = validatePaymentData(parsedBody);
+    if (!validation.valid) {
+      logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.CREATE_VALIDATION_ERROR,
+        success: false,
+        errorMessage: 'Payment data validation failed',
+        metadata: { errors: validation.errors },
+        ...auditContext,
+      });
+      return NextResponse.json({ 
+        error: 'Validation failed', 
+        details: validation.errors 
+      }, { status: 400 });
+    }
+
+    const { userId, amount, paymentType, txRef, description, customerEmail, customerName } = validation.sanitized;
     
     // Log payment creation initiated
     logPaymentAudit({
@@ -38,47 +56,23 @@ async function POST(req) {
       txRef,
       userId,
       paymentType,
-      amount: amount ? Number(amount) : null,
+      amount,
       currency: 'NGN',
       metadata: { customerEmail, customerName, description },
       ...auditContext,
     });
-    
-    // Validate required fields
-    if (!userId || !amount || !paymentType || !txRef) {
-      // Log validation error
-      logPaymentAudit({
-        action: PAYMENT_AUDIT_ACTIONS.CREATE_VALIDATION_ERROR,
-        txRef,
-        userId,
-        paymentType,
-        amount: amount ? Number(amount) : null,
-        success: false,
-        errorMessage: 'Missing required fields: userId, amount, paymentType, txRef',
-        metadata: { 
-          hasUserId: !!userId, 
-          hasAmount: !!amount, 
-          hasPaymentType: !!paymentType, 
-          hasTxRef: !!txRef 
-        },
-        ...auditContext,
-      });
-      return NextResponse.json({ 
-        error: 'Missing required fields: userId, amount, paymentType, txRef' 
-      }, { status: 400 });
-    }
 
     // Create payment record without user verification (user may not have doc yet)
     const paymentData = {
       userId,
-      amount: Number(amount),
+      amount,
       currency: 'NGN',
       paymentType,
       status: 'pending',
       txRef,
-      description,
-      customerEmail,
-      customerName,
+      description: description || '',
+      customerEmail: customerEmail || '',
+      customerName: customerName || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -94,7 +88,7 @@ async function POST(req) {
         txRef,
         userId,
         paymentType,
-        amount: Number(amount),
+        amount,
         currency: 'NGN',
         newStatus: 'pending',
         success: true,

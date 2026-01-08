@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/firebaseAdmin';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { validateUserId, validateTxRef, sanitizeString, validateEnum } from '@/lib/inputValidator';
 import { 
   logPaymentAudit, 
   createAuditContext, 
@@ -34,8 +35,8 @@ async function POST(req) {
     parsedBody = await req.json();
     const { transaction_id, tx_ref, userId, paymentType = 'registration' } = parsedBody;
     
+    // Validate required fields
     if (!transaction_id || !userId || !tx_ref) {
-      // Log validation error
       logPaymentAudit({
         action: PAYMENT_AUDIT_ACTIONS.VERIFY_VALIDATION_ERROR,
         success: false,
@@ -49,22 +50,65 @@ async function POST(req) {
       });
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    // Validate and sanitize inputs
+    const userIdValidation = validateUserId(userId);
+    if (!userIdValidation.valid) {
+      logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.VERIFY_VALIDATION_ERROR,
+        success: false,
+        errorMessage: userIdValidation.error,
+        ...auditContext,
+      });
+      return NextResponse.json({ error: userIdValidation.error }, { status: 400 });
+    }
+
+    const txRefValidation = validateTxRef(tx_ref);
+    if (!txRefValidation.valid) {
+      logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.VERIFY_VALIDATION_ERROR,
+        success: false,
+        errorMessage: txRefValidation.error,
+        ...auditContext,
+      });
+      return NextResponse.json({ error: txRefValidation.error }, { status: 400 });
+    }
+
+    const paymentTypeValidation = validateEnum(
+      paymentType,
+      ['registration', 'membership', 'fellowship', 'course', 'exam', 'other'],
+      'Payment type'
+    );
+    if (!paymentTypeValidation.valid) {
+      logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.VERIFY_VALIDATION_ERROR,
+        success: false,
+        errorMessage: paymentTypeValidation.error,
+        ...auditContext,
+      });
+      return NextResponse.json({ error: paymentTypeValidation.error }, { status: 400 });
+    }
+
+    const sanitizedTransactionId = sanitizeString(transaction_id, { maxLength: 255 });
+    
+    // Use sanitized values
+    const validatedUserId = userIdValidation.sanitized;
+    const validatedTxRef = txRefValidation.sanitized;
+    const validatedPaymentType = paymentTypeValidation.sanitized;
     
     // Log verification initiated
     logPaymentAudit({
       action: PAYMENT_AUDIT_ACTIONS.VERIFY_INITIATED,
-      txRef: tx_ref,
-      transactionId: transaction_id,
-      userId,
-      paymentType,
+      txRef: validatedTxRef,
+      transactionId: sanitizedTransactionId,
+      userId: validatedUserId,
+      paymentType: validatedPaymentType,
       ...auditContext,
     });
     
-    console.log(`[PAYMENT] Verifying payment: txRef=${tx_ref}, userId=${userId}, transactionId=${transaction_id}`);
-    
     // Call Flutterwave verify endpoint
     const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY;
-    const verifyUrl = `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`;
+    const verifyUrl = `https://api.flutterwave.com/v3/transactions/${sanitizedTransactionId}/verify`;
     
     const flwStartTime = Date.now();
     let flwRes;
@@ -80,10 +124,10 @@ async function POST(req) {
       // Log Flutterwave API network error
       logPaymentAudit({
         action: PAYMENT_AUDIT_ACTIONS.FLUTTERWAVE_API_ERROR,
-        txRef: tx_ref,
-        transactionId: transaction_id,
-        userId,
-        paymentType,
+        txRef: validatedTxRef,
+        transactionId: sanitizedTransactionId,
+        userId: validatedUserId,
+        paymentType: validatedPaymentType,
         success: false,
         errorMessage: `Network error calling Flutterwave: ${fetchError.message}`,
         errorCode: 'NETWORK_ERROR',
@@ -99,10 +143,10 @@ async function POST(req) {
       // Log Flutterwave API HTTP error
       logPaymentAudit({
         action: PAYMENT_AUDIT_ACTIONS.FLUTTERWAVE_API_ERROR,
-        txRef: tx_ref,
-        transactionId: transaction_id,
-        userId,
-        paymentType,
+        txRef: validatedTxRef,
+        transactionId: sanitizedTransactionId,
+        userId: validatedUserId,
+        paymentType: validatedPaymentType,
         success: false,
         errorMessage: `Flutterwave API error: ${flwRes.status}`,
         errorCode: `HTTP_${flwRes.status}`,
@@ -117,31 +161,29 @@ async function POST(req) {
     // Log successful Flutterwave API call
     logPaymentAudit({
       action: PAYMENT_AUDIT_ACTIONS.FLUTTERWAVE_API_SUCCESS,
-      txRef: tx_ref,
-      transactionId: transaction_id,
-      userId,
-      paymentType,
+      txRef: validatedTxRef,
+      transactionId: sanitizedTransactionId,
+      userId: validatedUserId,
+      paymentType: validatedPaymentType,
       success: true,
       flutterwaveResponse: flwData,
       responseTime: flwResponseTime,
       ...auditContext,
     });
     
-    console.log(`[PAYMENT] Flutterwave response: ${JSON.stringify(flwData)}`);
-    
     if (flwData.status === 'success' && flwData.data.status === 'successful') {
-      if (flwData.data.tx_ref !== tx_ref) {
+      if (flwData.data.tx_ref !== validatedTxRef) {
         // Log transaction reference mismatch
         logPaymentAudit({
           action: PAYMENT_AUDIT_ACTIONS.VERIFY_TX_REF_MISMATCH,
-          txRef: tx_ref,
-          transactionId: transaction_id,
-          userId,
-          paymentType,
+          txRef: validatedTxRef,
+          transactionId: sanitizedTransactionId,
+          userId: validatedUserId,
+          paymentType: validatedPaymentType,
           success: false,
           errorMessage: 'Transaction reference mismatch',
           metadata: {
-            expectedTxRef: tx_ref,
+            expectedTxRef: validatedTxRef,
             receivedTxRef: flwData.data.tx_ref,
           },
           ...auditContext,
@@ -149,18 +191,18 @@ async function POST(req) {
         return NextResponse.json({ error: 'Transaction reference mismatch' }, { status: 400 });
       }
       
-      const userRef = adminDb.collection('users').doc(userId);
+      const userRef = adminDb.collection('users').doc(validatedUserId);
       
       // Get user doc (but don't fail if it doesn't exist - we'll create it)
       const userDoc = await userRef.get();
       
       const paymentData = {
-        userId: userId,
-        txRef: tx_ref,
-        transactionId: transaction_id,
+        userId: validatedUserId,
+        txRef: validatedTxRef,
+        transactionId: sanitizedTransactionId,
         amount: flwData.data.amount,
         currency: flwData.data.currency,
-        paymentType: paymentType,
+        paymentType: validatedPaymentType,
         status: 'success',
         flutterwaveResponse: flwData.data,
         paymentDate: new Date().toISOString(),
@@ -170,8 +212,8 @@ async function POST(req) {
       
       // Find existing payment document
       const paymentsSnapshot = await adminDb.collection('payments')
-        .where('txRef', '==', tx_ref)
-        .where('userId', '==', userId)
+        .where('txRef', '==', validatedTxRef)
+        .where('userId', '==', validatedUserId)
         .limit(1)
         .get();
       
@@ -182,16 +224,15 @@ async function POST(req) {
         try {
           const paymentRef = await adminDb.collection('payments').add(paymentData);
           paymentId = paymentRef.id;
-          console.log(`[PAYMENT] Created new payment record: ${paymentId}`);
           
           // Log successful payment creation
           logPaymentAudit({
             action: PAYMENT_AUDIT_ACTIONS.DB_WRITE_SUCCESS,
             paymentId,
-            txRef: tx_ref,
-            transactionId: transaction_id,
-            userId,
-            paymentType,
+            txRef: validatedTxRef,
+            transactionId: sanitizedTransactionId,
+            userId: validatedUserId,
+            paymentType: validatedPaymentType,
             amount: flwData.data.amount,
             currency: flwData.data.currency,
             previousStatus: null,
@@ -204,10 +245,10 @@ async function POST(req) {
           // Log database write failure
           logPaymentAudit({
             action: PAYMENT_AUDIT_ACTIONS.DB_WRITE_FAILED,
-            txRef: tx_ref,
-            transactionId: transaction_id,
-            userId,
-            paymentType,
+            txRef: validatedTxRef,
+            transactionId: sanitizedTransactionId,
+            userId: validatedUserId,
+            paymentType: validatedPaymentType,
             amount: flwData.data.amount,
             currency: flwData.data.currency,
             success: false,
@@ -229,16 +270,15 @@ async function POST(req) {
             ...paymentData,
             updatedAt: new Date().toISOString()
           });
-          console.log(`[PAYMENT] Updated existing payment record: ${paymentId}`);
           
           // Log successful payment update with status change
           logPaymentAudit({
             action: PAYMENT_AUDIT_ACTIONS.STATUS_CHANGE,
             paymentId,
-            txRef: tx_ref,
-            transactionId: transaction_id,
-            userId,
-            paymentType,
+            txRef: validatedTxRef,
+            transactionId: sanitizedTransactionId,
+            userId: validatedUserId,
+            paymentType: validatedPaymentType,
             amount: flwData.data.amount,
             currency: flwData.data.currency,
             previousStatus: previousData.status,

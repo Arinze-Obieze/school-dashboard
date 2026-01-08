@@ -2,6 +2,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { validateFile } from '@/lib/fileValidator';
+import { validateUserId } from '@/lib/inputValidator';
 
 export const runtime = 'nodejs';
 
@@ -18,8 +19,15 @@ async function POST(req) {
     const formData = await req.formData();
     const file = formData.get('file');
     const userId = formData.get('userId');
+    
     if (!file || !userId) {
       return NextResponse.json({ error: 'Missing file or userId' }, { status: 400 });
+    }
+
+    // Validate and sanitize userId
+    const userIdValidation = validateUserId(userId);
+    if (!userIdValidation.valid) {
+      return NextResponse.json({ error: userIdValidation.error }, { status: 400 });
     }
 
     // Validate file type and size
@@ -52,7 +60,7 @@ async function POST(req) {
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const key = `${userId}/user_photo`;
+    const key = `${userIdValidation.sanitized}/user_photo`;
     const contentType = file.type || 'application/octet-stream';
     await s3.send(new PutObjectCommand({
       Bucket: R2_BUCKET,
@@ -60,7 +68,7 @@ async function POST(req) {
       Body: buffer,
       ContentType: contentType,
     }));
-    const url = `${R2_PUBLIC_URL}/${userId}/user_photo`;
+    const url = `${R2_PUBLIC_URL}/${userIdValidation.sanitized}/user_photo`;
     const response = NextResponse.json({ url });
     // Add rate limit headers
     Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
