@@ -22,18 +22,30 @@ const TranscriptsPage = () => {
 
   const fetchCompletedExams = async (studentId) => {
     try {
-      const response = await fetch(`/api/exams?studentId=${studentId}`);
-      const data = await response.json();
+      const response = await fetch(`/api/exams?studentId=${studentId}&limit=100`);
+      const responseData = await response.json();
+      
+      // Handle different response formats
+      let examsData = [];
+      if (responseData.success && responseData.data) {
+        examsData = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        examsData = responseData;
+      } else if (responseData.data && Array.isArray(responseData.data)) {
+        examsData = responseData.data;
+      }
       
       // Filter only completed exams with reports
-      const completedExams = data.filter(exam => 
-        exam.completed === true && exam.report
+      const completedExams = examsData.filter(exam => 
+        (exam.completed === true || exam.completed === 1) && exam.report
       );
       
       // Sort by completion date (most recent first)
-      completedExams.sort((a, b) => 
-        new Date(b.completed_at) - new Date(a.completed_at)
-      );
+      completedExams.sort((a, b) => {
+        const dateA = a.completed_at ? new Date(a.completed_at) : new Date(0);
+        const dateB = b.completed_at ? new Date(b.completed_at) : new Date(0);
+        return dateB - dateA;
+      });
       
       setExams(completedExams);
     } catch (error) {
