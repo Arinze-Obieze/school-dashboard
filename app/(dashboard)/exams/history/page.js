@@ -159,12 +159,25 @@ const ExamPortalPage = () => {
     const examStart = new Date(`${exam.date}T${exam.time_range_start}`);
     const examEnd = new Date(`${exam.date}T${exam.time_range_end}`);
     
-    // If exam was manually marked as started/completed
-    if (exam.started) {
-      return exam.completed ? 'completed' : 'in-progress';
+    const bufferMs = 15 * 60 * 1000; // 15 minutes buffer before exam starts
+    
+    // Check if exam time window has passed
+    const isExamOver = now > examEnd;
+    
+    // If exam is completed, always show as completed
+    if (exam.completed) {
+      return 'completed';
     }
     
-    const bufferMs = 15 * 60 * 1000; // 15 minutes buffer before exam starts
+    // If exam was started but time window has passed without completion, mark as past
+    if (exam.started && isExamOver) {
+      return 'past';
+    }
+    
+    // If exam was started and time window hasn't passed, it's in progress
+    if (exam.started && !isExamOver) {
+      return 'in-progress';
+    }
     
     // Upcoming: before exam start time (with 15 min buffer)
     if (now < (examStart - bufferMs)) {
@@ -174,8 +187,8 @@ const ExamPortalPage = () => {
     else if (now >= (examStart - bufferMs) && now <= examEnd) {
       return 'active';
     } 
-    // Past: immediately after exam end time
-    else if (now > examEnd) {
+    // Past: immediately after exam end time and not started
+    else if (isExamOver) {
       return 'past';
     }
     
@@ -279,17 +292,23 @@ const ExamPortalPage = () => {
       completed: 0,
     };
 
-    // SINGLE PASS: Calculate status once and group exams (O(n) instead of O(n*m))
+    // SINGLE PASS: Use already-calculated status from exam object (O(n) instead of O(n*m))
     for (const exam of exams) {
-      const status = getExamStatus(exam);
+      const status = exam.status; // Use pre-calculated status instead of recalculating
       byStatus[status]?.push(exam);
       
       // Update stats
       stats.total++;
       if (status === 'in-progress') {
         stats.inProgress++;
-      } else {
-        stats[status]++;
+      } else if (status === 'completed') {
+        stats.completed++;
+      } else if (status === 'past') {
+        stats.past++;
+      } else if (status === 'upcoming') {
+        stats.upcoming++;
+      } else if (status === 'active') {
+        stats.active++;
       }
     }
 
@@ -314,7 +333,7 @@ const ExamPortalPage = () => {
     });
 
     return { filteredExams, stats };
-  }, [exams, activeTab, getExamStatus]);
+  }, [exams, activeTab]); // Removed getExamStatus dependency since we're using pre-calculated status
 
   // Format date
   const formatDate = useCallback((dateString) => {

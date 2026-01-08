@@ -2,7 +2,8 @@ import { getR2Client, R2Config } from '@/lib/r2Client';
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { checkRateLimit } from '@/lib/rateLimit';
-import { validateUserId, validateUrl } from '@/lib/inputValidator';
+import { requireAuth } from '@/lib/authMiddleware';
+import { validateUrl } from '@/lib/inputValidator';
 
 export const runtime = 'nodejs';
 
@@ -15,17 +16,23 @@ async function POST(req) {
     return rateLimitResult;
   }
 
-  try {
-    const { url, userId } = await req.json();
-    
-    if (!url || !userId) {
-      return NextResponse.json({ error: 'Missing url or userId' }, { status: 400 });
-    }
+  // Require authentication
+  const authResult = await requireAuth(req);
+  if (!authResult.authenticated) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
 
-    // Validate userId
-    const userIdValidation = validateUserId(userId);
-    if (!userIdValidation.valid) {
-      return NextResponse.json({ error: userIdValidation.error }, { status: 400 });
+  // Use authenticated user ID (trusted source)
+  const authenticatedUserId = authResult.uid;
+
+  try {
+    const { url } = await req.json();
+    
+    if (!url) {
+      return NextResponse.json({ error: 'Missing url' }, { status: 400 });
     }
 
     // Validate URL
@@ -42,6 +49,19 @@ async function POST(req) {
       return NextResponse.json({ error: 'Invalid R2 URL' }, { status: 400 });
     }
     const key = url.replace(publicPrefix, '');
+
+    // SECURITY: Verify user owns this file
+    const expectedPrefix = `${authenticatedUserId}/`;
+    if (!key.startsWith(expectedPrefix)) {
+      console.warn(
+        `[SECURITY] IDOR attempt: User ${authenticatedUserId} tried to delete ${key}`
+      );
+      return NextResponse.json(
+        { error: 'Unauthorized: Cannot delete files belonging to other users' },
+        { status: 403 }
+      );
+    }
+
     const s3 = getR2Client();
     await s3.send(new DeleteObjectCommand({
       Bucket: R2Config.CLOUDFLARE_R2_BUCKET,

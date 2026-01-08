@@ -158,7 +158,7 @@ async function POST(req) {
     
     const flwData = await flwRes.json();
     
-    // Log successful Flutterwave API call
+    // Log successful Flutterwave API call (without sensitive data)
     logPaymentAudit({
       action: PAYMENT_AUDIT_ACTIONS.FLUTTERWAVE_API_SUCCESS,
       txRef: validatedTxRef,
@@ -166,7 +166,10 @@ async function POST(req) {
       userId: validatedUserId,
       paymentType: validatedPaymentType,
       success: true,
-      flutterwaveResponse: flwData,
+      // Only log essential verification details, not full customer/card data
+      verificationStatus: flwData.data?.status,
+      verificationAmount: flwData.data?.amount,
+      verificationCurrency: flwData.data?.currency,
       responseTime: flwResponseTime,
       ...auditContext,
     });

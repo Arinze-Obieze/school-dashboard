@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminAuth } from '@/firebaseAdmin';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { requireSuperAdmin } from '@/lib/authMiddleware';
 
 export const runtime = 'nodejs';
 
@@ -10,6 +11,7 @@ const RATE_LIMIT = 10; // 10 requests per minute for token generation
  * POST /api/auth/get-token
  * 
  * Generates a Firebase custom token for testing API endpoints
+ * PROTECTED: Only superadmins can generate tokens for other users
  * 
  * Request body:
  * {
@@ -29,6 +31,15 @@ async function POST(req) {
   const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
   if (!rateLimitResult.allowed) {
     return rateLimitResult;
+  }
+
+  // Require superadmin authentication
+  const authResult = await requireSuperAdmin(req);
+  if (!authResult.authenticated) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Superadmin access required' },
+      { status: 403 }
+    );
   }
 
   try {
@@ -52,10 +63,9 @@ async function POST(req) {
     }
 
     // Get user by email
-    const auth = getAuth();
     let user;
     try {
-      user = await auth.getUserByEmail(email);
+      user = await adminAuth.getUserByEmail(email);
     } catch (error) {
       return NextResponse.json(
         { error: `User with email ${email} not found` },
@@ -99,12 +109,22 @@ async function POST(req) {
  * GET /api/auth/get-token?email=user@example.com
  * 
  * Alternative GET method for token generation
+ * PROTECTED: Only superadmins can generate tokens for other users
  */
 async function GET(req) {
   // Apply rate limiting
   const rateLimitResult = await checkRateLimit(req, RATE_LIMIT);
   if (!rateLimitResult.allowed) {
     return rateLimitResult;
+  }
+
+  // Require superadmin authentication
+  const authResult = await requireSuperAdmin(req);
+  if (!authResult.authenticated) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Superadmin access required' },
+      { status: 403 }
+    );
   }
 
   try {

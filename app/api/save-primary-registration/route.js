@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/firebaseAdmin';
 import { checkRateLimit } from '@/lib/rateLimit';
-import { validateRegistrationData } from '@/lib/inputValidator';
+import { requireAuth } from '@/lib/authMiddleware';
+import { sanitizeObject } from '@/lib/inputValidator';
 
 export const runtime = 'nodejs';
 
@@ -13,23 +14,25 @@ async function POST(req) {
   if (!rateLimitResult.allowed) {
     return rateLimitResult;
   }
+
+  // Require authentication
+  const authResult = await requireAuth(req);
+  if (!authResult.authenticated) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+
+  // Use authenticated user ID (trusted source)
+  const userId = authResult.uid;
   
   try {
     const data = await req.json();
     
-    // Validate and sanitize registration data
-    const validation = validateRegistrationData(data);
-    if (!validation.valid) {
-      return NextResponse.json({ 
-        error: 'Validation failed', 
-        details: validation.errors 
-      }, { status: 400 });
-    }
-
-    const { userId, ...registrationData } = validation.sanitized;
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
-    }
+    // Sanitize registration data (remove userId if present in body)
+    const registrationData = sanitizeObject(data, { maxDepth: 3 });
+    delete registrationData.userId; // Ignore client-provided userId
     const ref = adminDb.collection('users').doc(userId).collection('primary-registration');
     const docRef = await ref.add({
       ...registrationData,

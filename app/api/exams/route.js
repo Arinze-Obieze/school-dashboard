@@ -9,7 +9,7 @@ import {
 
 const RATE_LIMIT = 15; // 15 requests per minute for exam fetching
 
-async function GET(request) {
+export async function GET(request) {
   // Apply rate limiting
   const rateLimitResult = await checkRateLimit(request, RATE_LIMIT);
   if (!rateLimitResult.allowed) {
@@ -23,7 +23,7 @@ async function GET(request) {
     const limit = searchParams.get('limit');
 
     if (!studentId) {
-      return Response.json(
+      return NextResponse.json(
         formatErrorResponse('studentId is required', 400),
         { status: 400 }
       );
@@ -70,7 +70,7 @@ async function GET(request) {
         'Failed to fetch exams',
         res.status
       );
-      return Response.json(errorResponse, { status: res.status });
+      return NextResponse.json(errorResponse, { status: res.status });
     }
 
     const data = await res.json();
@@ -88,7 +88,7 @@ async function GET(request) {
     );
     responseData.meta.apiUrl = apiUrl;
 
-    const response = Response.json(responseData);
+    const response = NextResponse.json(responseData);
     // Add rate limit headers
     Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
       response.headers.set(key, value);
@@ -101,8 +101,6 @@ async function GET(request) {
       error.message || 'Failed to fetch exams',
       500
     );
-    return Response.json(errorResponse, { status: 500 });
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
-
-export { GET };
