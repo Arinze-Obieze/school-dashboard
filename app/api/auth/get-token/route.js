@@ -1,25 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getAuth } from 'firebase-admin/auth';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { adminAuth } from '@/firebaseAdmin';
 import { checkRateLimit } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
-
-// Initialize Firebase Admin if not already initialized
-const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64;
-if (!base64) {
-  throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 environment variable is not set');
-}
-
-const serviceAccount = JSON.parse(
-  Buffer.from(base64, 'base64').toString('utf-8')
-);
-
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(serviceAccount),
-  });
-}
 
 const RATE_LIMIT = 10; // 10 requests per minute for token generation
 
@@ -81,7 +64,7 @@ async function POST(req) {
     }
 
     // Generate custom token (valid for 1 hour)
-    const customToken = await auth.createCustomToken(user.uid, {
+    const customToken = await adminAuth.createCustomToken(user.uid, {
       role: user.customClaims?.role || 'user',
     });
 
@@ -136,10 +119,9 @@ async function GET(req) {
     }
 
     // Get user by email
-    const auth = getAuth();
     let user;
     try {
-      user = await auth.getUserByEmail(email);
+      user = await adminAuth.getUserByEmail(email);
     } catch (error) {
       return NextResponse.json(
         { error: `User with email ${email} not found` },
@@ -148,7 +130,7 @@ async function GET(req) {
     }
 
     // Generate custom token
-    const customToken = await auth.createCustomToken(user.uid, {
+    const customToken = await adminAuth.createCustomToken(user.uid, {
       role: user.customClaims?.role || 'user',
     });
 
