@@ -1,4 +1,6 @@
+'use client'
 import React from 'react';
+import PhoneInputField from '@/components/auth/steps/forms/PhoneInputField';
 
 export default function StepPersonalDetails({ formData, handleChange }) {
   return (
@@ -48,19 +50,13 @@ export default function StepPersonalDetails({ formData, handleChange }) {
             required
           />
         </div>
-      
-        <div>
-          <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-300">
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            name="phoneNumber"
-            id="phoneNumber"
+        
+        {/* Phone Number */}
+        <div className="mb-4">
+          <PhoneInputField
             value={formData.phoneNumber}
-            onChange={handleChange}
-            className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-200"
-            required
+            onChange={(value) => handleChange({ target: { name: 'phoneNumber', value } })}
+            label="Phone Number"
           />
         </div>
         

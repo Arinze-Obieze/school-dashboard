@@ -6,6 +6,8 @@ import { db } from '@/firebase';
 import Link from 'next/link';
 import { FiArrowLeft, FiSearch, FiFilter, FiDownload, FiCalendar, FiDollarSign, FiCheckCircle, FiClock, FiX } from 'react-icons/fi';
 import { MdOutlinePayments } from 'react-icons/md';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import PaymentReceiptPDF from '@/components/Transcripts/PaymentReceiptPDF';
 
 const PaymentHistoryPage = () => {
   const [payments, setPayments] = useState([]);
@@ -42,6 +44,9 @@ const PaymentHistoryPage = () => {
           id: doc.id,
           ...doc.data(),
         }));
+
+        // Debug: Log payment statuses to identify the issue
+        console.log('Payment statuses:', paymentsData.map(p => ({ id: p.id, status: p.status, txRef: p.txRef })));
 
         setPayments(paymentsData);
       } catch (error) {
@@ -87,7 +92,13 @@ const PaymentHistoryPage = () => {
 
     // Status filter
     if (filterStatus !== 'all') {
-      filtered = filtered.filter(payment => payment.status === filterStatus);
+      filtered = filtered.filter(payment => {
+        // Handle both 'success' and 'successful' for the success filter
+        if (filterStatus === 'success') {
+          return payment.status === 'success' || payment.status === 'successful';
+        }
+        return payment.status === filterStatus;
+      });
     }
 
     // Type filter
@@ -125,6 +136,7 @@ const PaymentHistoryPage = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'success':
+      case 'successful':
         return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'pending':
         return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
@@ -138,6 +150,7 @@ const PaymentHistoryPage = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'success':
+      case 'successful':
         return <FiCheckCircle className="w-5 h-5" />;
       case 'pending':
         return <FiClock className="w-5 h-5" />;
@@ -179,49 +192,19 @@ const PaymentHistoryPage = () => {
   };
 
   const downloadReceipt = (payment) => {
-    // Create a simple receipt in text format
-    const receiptContent = `
-PAYMENT RECEIPT
-===============================================
-
-Payment ID: ${payment.id}
-Transaction Reference: ${payment.txRef}
-Transaction ID: ${payment.transactionId || 'N/A'}
-
-Date: ${formatDate(payment.paymentDate || payment.createdAt)}
-Payment Type: ${getPaymentTypeLabel(payment.paymentType)}
-Status: ${payment.status.toUpperCase()}
-
-Amount: ₦${payment.amount.toLocaleString('en-NG')}
-Currency: ${payment.currency}
-
-Customer Name: ${payment.customerName || 'N/A'}
-Customer Email: ${payment.customerEmail || 'N/A'}
-
-Description: ${payment.description || 'N/A'}
-
-===============================================
-This is an automated receipt. No signature required.
-    `;
-
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(receiptContent));
-    element.setAttribute('download', `Receipt-${payment.txRef}.txt`);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    // Receipt will be generated as PDF using PaymentReceiptPDF component
+    // This function is kept for reference but actual download is handled by PDFDownloadLink
   };
 
   // Calculate totals
   const totalAmount = filteredPayments.reduce((sum, payment) => {
-    if (payment.status === 'success') {
+    if (payment.status === 'success' || payment.status === 'successful') {
       return sum + (payment.amount || 0);
     }
     return sum;
   }, 0);
 
-  const successfulPayments = filteredPayments.filter(p => p.status === 'success').length;
+  const successfulPayments = filteredPayments.filter(p => p.status === 'success' || p.status === 'successful').length;
   const pendingPayments = filteredPayments.filter(p => p.status === 'pending').length;
 
   return (
@@ -372,7 +355,7 @@ This is an automated receipt. No signature required.
                       <td className="px-6 py-4">
                         <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadge(payment.status)}`}>
                           {getStatusIcon(payment.status)}
-                          {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                          {payment.status === 'successful' ? 'Success' : payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -382,13 +365,18 @@ This is an automated receipt. No signature required.
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <button
-                          onClick={() => downloadReceipt(payment)}
+                        <PDFDownloadLink
+                          document={<PaymentReceiptPDF payment={payment} userProfile={userProfile} />}
+                          fileName={`Receipt-${payment.txRef}-${new Date().toISOString().split('T')[0]}.pdf`}
                           className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
                         >
-                          <FiDownload className="w-4 h-4" />
-                          Receipt
-                        </button>
+                          {({ blob, url, loading, error }) => (
+                            <>
+                              <FiDownload className="w-4 h-4" />
+                              {loading ? 'Generating...' : 'Receipt'}
+                            </>
+                          )}
+                        </PDFDownloadLink>
                       </td>
                     </tr>
                   ))}

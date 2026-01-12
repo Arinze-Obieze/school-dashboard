@@ -1,3 +1,6 @@
+'use client'
+import { useState, useEffect } from 'react';
+import PhoneInputField from '@/components/auth/steps/forms/PhoneInputField';
 export default function StepPersonalDetails({ formData, handleChange }) {
   return (
     <div className="space-y-8">
@@ -96,24 +99,11 @@ export default function StepPersonalDetails({ formData, handleChange }) {
           />
         </div>
         <div className="space-y-2">
-          <label className="block text-lg font-medium text-gray-300">Phone/WhatsApp Number*</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <span className="text-gray-400 text-base">+</span>
-            </div>
-            <input
-              type="tel"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-              minLength="10"
-              maxLength="15"
-              pattern="[0-9\s+]+"
-              className="block w-full pl-8 px-4 py-3 text-base rounded-lg border border-gray-500 bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-              placeholder="234 123 456 7890"
-            />
-          </div>
+          <PhoneInputField
+            value={formData.phoneNumber}
+            onChange={(value) => handleChange({ target: { name: 'phoneNumber', value } })}
+            label="Phone/WhatsApp Number"
+          />
         </div>
       </div>
     </div>

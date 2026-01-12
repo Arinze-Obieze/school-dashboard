@@ -37,25 +37,36 @@ async function POST(req) {
     const validationErrors = [];
 
     for (const field of fileFields) {
-      const file = formData.get(field);
-      if (file && typeof file === 'object' && file.size > 0) {
-        // Validate file before upload
-        const config = FIELD_CONFIG[field];
-        const validation = validateFile(file, { category: config.category, maxSize: config.maxSize });
-        if (!validation.valid) {
-          validationErrors.push(`${field}: ${validation.error}`);
-          continue;
+      const files = formData.getAll(field); // Get all files for this field
+      
+      if (files && files.length > 0) {
+        uploadedUrls[field] = []; // Initialize array for this field
+        
+        for (const file of files) {
+          if (file && typeof file === 'object' && file.size > 0) {
+            // Validate file before upload
+            const config = FIELD_CONFIG[field];
+            const validation = validateFile(file, { category: config.category, maxSize: config.maxSize });
+            if (!validation.valid) {
+              validationErrors.push(`${field} (${file.name}): ${validation.error}`);
+              continue;
+            }
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const key = `${userId}/registration/fellowship-registration/${field}-${Date.now()}-${file.name}`;
+            await s3.send(new PutObjectCommand({
+              Bucket: R2Config.CLOUDFLARE_R2_BUCKET,
+              Key: key,
+              Body: buffer,
+              ContentType: file.type || 'application/octet-stream',
+            }));
+            uploadedUrls[field].push(`${R2Config.CLOUDFLARE_R2_PUBLIC_URL}/${key}`);
+          }
         }
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const key = `${userId}/registration/fellowship-registration/${field}-${Date.now()}-${file.name}`;
-        await s3.send(new PutObjectCommand({
-          Bucket: R2Config.CLOUDFLARE_R2_BUCKET,
-          Key: key,
-          Body: buffer,
-          ContentType: file.type || 'application/octet-stream',
-        }));
-        uploadedUrls[field] = `${R2Config.CLOUDFLARE_R2_PUBLIC_URL}/${key}`;
+        
+        // If only one file was uploaded (and expected single), technically we return array now for consistency
+        // But if the frontend expects single string for some legacy reason, we might need adjustments.
+        // However, plan says "Return an array of URLs", so we stick to that.
       }
     }
 

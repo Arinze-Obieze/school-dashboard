@@ -512,10 +512,6 @@ export default function PrimaryRegistration() {
                       formData={formData} 
                       handleChange={handleChange} 
                       handleFileChange={handleFileChange} 
-                      declarationChecked={formData.declarationChecked}
-                      setDeclarationChecked={(checked) => setFormData(prev => ({ ...prev, declarationChecked: checked }))}
-                      declarationDate={formData.declarationDate}
-                      setDeclarationDate={(date) => setFormData(prev => ({ ...prev, declarationDate: date }))}
                     />
                   )}
 

@@ -160,7 +160,17 @@ export default function FellowshipRegistration() {
   // File change handler
   const handleFileChange = (e) => {
     const { name, files } = e.target;
-    setFormData(prev => ({ ...prev, [name]: files[0] }));
+    // For multi-file fields, store the FileList as an array
+    if (name === 'publishedPapers' || name === 'passportPhotos') {
+        setFormData(prev => ({ ...prev, [name]: Array.from(files) }));
+    } else {
+        setFormData(prev => ({ ...prev, [name]: files[0] }));
+    }
+  };
+
+  // Direct file state updater for improved UI
+  const handleFileUpdate = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   // Array field change handler
@@ -268,13 +278,31 @@ export default function FellowshipRegistration() {
   const proceedWithPayment = async (amount) => {
     setLoading(true);
     try {
+      // First create payment record
+      const paymentRes = await fetch('/api/payments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          amount: amount,
+          paymentType: 'fellowship',
+          txRef: `FELLOWSHIP-${user.uid}-${Date.now()}`,
+          description: 'Fellowship Examination Registration Fee',
+          customerEmail: formData.email,
+          customerName: formData.fullName,
+        }),
+      });
+
+      if (!paymentRes.ok) throw new Error('Failed to create payment record');
+      const paymentData = await paymentRes.json();
+
       const script = document.createElement('script');
       script.src = 'https://checkout.flutterwave.com/v3.js';
       script.async = true;
       script.onload = () => {
         window.FlutterwaveCheckout({
           public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY,
-          tx_ref: `FELLOWSHIP-${user.uid}-${Date.now()}`,
+          tx_ref: paymentData.paymentData.txRef,
           amount: amount,
           currency: 'NGN',
           payment_options: 'card,banktransfer',
@@ -289,13 +317,32 @@ export default function FellowshipRegistration() {
           },
           callback: async (response) => {
             if (response.status === 'successful') {
-              setPaymentSuccess(true);
-              toast.success('Payment successful! Now complete your application.');
+              // Verify payment
+              const verifyRes = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  transaction_id: response.transaction_id,
+                  tx_ref: response.tx_ref,
+                  userId: user.uid,
+                  paymentType: 'fellowship'
+                }),
+              });
+              
+              if (verifyRes.ok) {
+                setPaymentSuccess(true);
+                toast.success('Payment successful! Now complete your application.');
+              } else {
+                toast.error('Payment verification failed.');
+              }
             } else {
               toast.error('Payment not completed.');
             }
             setLoading(false);
           },
+          onclose: function() {
+            setLoading(false);
+          }
         });
       };
       document.body.appendChild(script);
@@ -334,7 +381,14 @@ export default function FellowshipRegistration() {
       ];
       fileFields.forEach((field) => {
         if (formData[field]) {
-          formDataToSend.append(field, formData[field]);
+           if (Array.isArray(formData[field])) {
+               // Append each file in the array with the SAME key
+               formData[field].forEach(file => {
+                   formDataToSend.append(field, file);
+               });
+           } else {
+               formDataToSend.append(field, formData[field]);
+           }
         }
       });
       formDataToSend.append('userId', user.uid);
@@ -462,7 +516,8 @@ export default function FellowshipRegistration() {
                     <StepAttachmentsDeclaration 
                       formData={formData} 
                       handleChange={handleChange} 
-                      handleFileChange={handleFileChange} 
+                      handleFileChange={handleFileChange}
+                      handleFileUpdate={handleFileUpdate} 
                     />
                   )}
 

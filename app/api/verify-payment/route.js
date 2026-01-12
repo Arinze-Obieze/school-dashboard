@@ -76,7 +76,7 @@ async function POST(req) {
 
     const paymentTypeValidation = validateEnum(
       paymentType,
-      ['registration', 'membership', 'fellowship', 'course', 'exam', 'other'],
+      ['registration', 'primary', 'membership', 'fellowship', 'course', 'exam', 'other'],
       'Payment type'
     );
     if (!paymentTypeValidation.valid) {
