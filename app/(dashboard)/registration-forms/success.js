@@ -1,6 +1,7 @@
 "use client";
 
-import { FaWhatsapp, FaTelegram, FaCheckCircle, FaArrowRight } from "react-icons/fa";
+import { FaWhatsapp, FaTelegram, FaCheckCircle, FaArrowRight, FaCreditCard } from "react-icons/fa";
+import Link from 'next/link';
 
 const GROUPS = [
   {
@@ -66,7 +67,25 @@ export default function Success() {
               </a>
             ))}
           </div>
-        </div>
+
+            {/* Make Additional Payment Card */}
+            <div className="mt-6">
+              <Link href="/payments/make-payment">
+                <div className="flex items-center justify-between bg-green-500/10 hover:bg-green-500/20 transition-all rounded-lg p-5 group cursor-pointer border border-green-700">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 rounded-lg bg-gray-700/50 group-hover:bg-gray-700/70 transition">
+                      <FaCreditCard className="text-green-500" size={28} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg text-white">Make Additional Payment</h3>
+                      <p className="text-gray-400 text-sm">Pay in installments or make additional payments for your registration</p>
+                    </div>
+                  </div>
+                  <FaArrowRight className="text-gray-400 group-hover:text-white transition mr-2" />
+                </div>
+              </Link>
+            </div>
+          </div>
       </div>
     </div>
   );

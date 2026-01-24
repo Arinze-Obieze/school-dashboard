@@ -110,6 +110,15 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ✅ YouTube Videos collection
+    match /youtube_videos/{videoId} {
+      // Allow authenticated users to read videos
+      allow read: if request.auth != null;
+      
+      // Allow superadmin to create, update, delete videos
+      allow create, update, delete: if request.auth != null && request.auth.token.role == "superadmin";
+    }
+
     // ❌ Deny all other access
     match /{document=**} {
       allow read, write: if false;

@@ -48,7 +48,7 @@ async function POST(req) {
       }, { status: 400 });
     }
 
-    const { userId, amount, paymentType, txRef, description, customerEmail, customerName } = validation.sanitized;
+    const { userId, amount, paymentType, txRef, description, customerEmail, customerName, customPurpose } = validation.sanitized;
     
     // Log payment creation initiated
     logPaymentAudit({
@@ -58,7 +58,7 @@ async function POST(req) {
       paymentType,
       amount,
       currency: 'NGN',
-      metadata: { customerEmail, customerName, description },
+      metadata: { customerEmail, customerName, description, customPurpose },
       ...auditContext,
     });
 
@@ -76,6 +76,11 @@ async function POST(req) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+    
+    // Add customPurpose if it exists (for custom payment types)
+    if (customPurpose) {
+      paymentData.customPurpose = customPurpose;
+    }
 
     let paymentRef;
     try {

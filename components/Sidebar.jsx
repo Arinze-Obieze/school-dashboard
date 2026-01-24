@@ -68,11 +68,8 @@ const menuItems = [
 {
   label: "Payments", icon: <MdOutlinePayments />, href: "/payments",
   subItems: [
-      // { label: "Fee Breakdown", href: "/payment/fee-breakdown", icon: <FaListAlt /> },
-      // { label: "Pay Online", href: "/payment/pay", icon: <FaCreditCard /> },
-      { label: "View Payment History", href: "/payments/history", icon: <FaHistory /> },
-      // { label: "Download Payment Receipts", href: "/payment/receipts", icon: <FaDownload /> },
-      // { label: "Print Invoice", href: "/payment/invoice", icon: <FaPrint /> },
+      { label: "Make Payment", href: "/payments/make-payment", icon: <FaCreditCard /> },
+      { label: "Payment History", href: "/payments/history", icon: <FaHistory /> },
   ]
 },
 // {

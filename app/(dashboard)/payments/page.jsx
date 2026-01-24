@@ -10,36 +10,18 @@ import {
 import Card from '@/components/Card'
 
 const paymentCards = [
-  // {
-  //   title: 'Fee Breakdown',
-  //   icon: <FaListAlt className="text-3xl" />,
-  //   bg: '#2980b9',
-  //   href: '/payment/fee-breakdown'
-  // },
-  // {
-  //   title: 'Pay Online',
-  //   icon: <FaCreditCard className="text-3xl" />,
-  //   bg: '#27ae60',
-  //   href: '/payment/pay'
-  // },
+  {
+    title: 'Make a Payment',
+    icon: <FaCreditCard className="text-3xl" />,
+    bg: '#27ae60',
+    href: '/payments/make-payment'
+  },
   {
     title: 'View Payment History',
     icon: <FaHistory className="text-3xl" />,
     bg: '#8e44ad',
     href: '/payments/history'
   },
-  // {
-  //   title: 'Download Payment Receipts',
-  //   icon: <FaDownload className="text-3xl" />,
-  //   bg: '#e67e22',
-  //   href: '/payment/receipts'
-  // },
-  // {
-  //   title: 'Print Invoice',
-  //   icon: <FaPrint className="text-3xl" />,
-  //   bg: '#c0392b',
-  //   href: '/payment/invoice'
-  // }
 ]
 
 function Payments() {

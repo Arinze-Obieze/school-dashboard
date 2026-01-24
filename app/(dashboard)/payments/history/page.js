@@ -161,7 +161,7 @@ const PaymentHistoryPage = () => {
     }
   };
 
-  const getPaymentTypeLabel = (type) => {
+  const getPaymentTypeLabel = (type, customPurpose) => {
     switch (type) {
       case 'registration':
         return 'Registration Fee';
@@ -171,6 +171,8 @@ const PaymentHistoryPage = () => {
         return 'Membership';
       case 'fellowship':
         return 'Fellowship';
+      case 'custom':
+        return customPurpose || 'Custom Payment';
       default:
         return type || 'Payment';
     }
@@ -186,6 +188,8 @@ const PaymentHistoryPage = () => {
         return 'bg-green-100 text-green-800';
       case 'fellowship':
         return 'bg-orange-100 text-orange-800';
+      case 'custom':
+        return 'bg-cyan-100 text-cyan-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -305,6 +309,7 @@ const PaymentHistoryPage = () => {
               <option value="primary">Primary Exam</option>
               <option value="membership">Membership</option>
               <option value="fellowship">Fellowship</option>
+              <option value="custom">Custom Payment</option>
             </select>
           </div>
         </div>
@@ -345,7 +350,7 @@ const PaymentHistoryPage = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getPaymentTypeColor(payment.paymentType)}`}>
-                          {getPaymentTypeLabel(payment.paymentType)}
+                          {getPaymentTypeLabel(payment.paymentType, payment.customPurpose)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
