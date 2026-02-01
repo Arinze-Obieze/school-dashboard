@@ -19,7 +19,6 @@ import {
   FaPlusCircle,
   FaCloudDownloadAlt,
   FaUpload,
- 
   FaListAlt,
   FaCreditCard,
   FaHistory,
@@ -27,7 +26,6 @@ import {
   FaPrint,
   FaVideo,
   FaUsers,
-
   FaFileAlt,
   FaRegClock
 } from 'react-icons/fa';

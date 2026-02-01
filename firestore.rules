@@ -11,6 +11,14 @@ service cloud.firestore {
       allow read, create, update, delete: if request.auth.token.role == "superadmin";
     }
 
+    match /youtube_videos/{videoId} {
+      // Allow authenticated users to read videos marked as 'sent' to 'all'
+      allow read: if request.auth != null;
+      
+      // Allow superadmin to create, update, delete videos
+      allow create, update, delete: if request.auth.token.role == "superadmin";
+    }
+
     // ✅ Notification collection
     match /notifications/{notifId} {
       // Superadmin: full access
@@ -108,15 +116,6 @@ service cloud.firestore {
     match /rate-limit-violations/{violationId} {
       // No client access - all operations via Admin SDK
       allow read, write: if false;
-    }
-
-    // ✅ YouTube Videos collection
-    match /youtube_videos/{videoId} {
-      // Allow authenticated users to read videos
-      allow read: if request.auth != null;
-      
-      // Allow superadmin to create, update, delete videos
-      allow create, update, delete: if request.auth != null && request.auth.token.role == "superadmin";
     }
 
     // ❌ Deny all other access

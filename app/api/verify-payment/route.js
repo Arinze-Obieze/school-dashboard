@@ -140,7 +140,9 @@ async function POST(req) {
     const flwResponseTime = Date.now() - flwStartTime;
     
     if (!flwRes.ok) {
-      // Log Flutterwave API HTTP error
+      // Log Flutterwave API HTTP error - get text instead of failing on json
+      const errorBody = await flwRes.text();
+      
       logPaymentAudit({
         action: PAYMENT_AUDIT_ACTIONS.FLUTTERWAVE_API_ERROR,
         txRef: validatedTxRef,
@@ -148,15 +150,37 @@ async function POST(req) {
         userId: validatedUserId,
         paymentType: validatedPaymentType,
         success: false,
-        errorMessage: `Flutterwave API error: ${flwRes.status}`,
+        errorMessage: `Flutterwave API error: ${flwRes.status} - ${errorBody.substring(0, 500)}`,
         errorCode: `HTTP_${flwRes.status}`,
         responseTime: flwResponseTime,
         ...auditContext,
       });
-      throw new Error(`Flutterwave API error: ${flwRes.status}`);
+      throw new Error(`Flutterwave API error: ${flwRes.status} - ${errorBody.substring(0, 200)}`);
     }
     
-    const flwData = await flwRes.json();
+    let flwData;
+    try {
+      const responseText = await flwRes.text();
+      try {
+        flwData = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('[PAYMENT] Failed to parse Flutterwave response as JSON:', responseText.substring(0, 500));
+        throw new Error(`Invalid JSON response from payment provider: ${responseText.substring(0, 100)}`);
+      }
+    } catch (parseError) {
+       logPaymentAudit({
+        action: PAYMENT_AUDIT_ACTIONS.FLUTTERWAVE_API_ERROR,
+        txRef: validatedTxRef,
+        transactionId: sanitizedTransactionId,
+        userId: validatedUserId,
+        success: false,
+        errorMessage: `Parse error: ${parseError.message}`,
+        errorCode: 'JSON_PARSE_ERROR',
+        responseTime: flwResponseTime,
+        ...auditContext,
+      });
+      throw parseError;
+    }
     
     // Log successful Flutterwave API call (without sensitive data)
     logPaymentAudit({
@@ -308,16 +332,41 @@ async function POST(req) {
         }
       }
       
-      // Update user document with payment status
+      // Prepare payment reference for history
+      const userData = userDoc.exists ? userDoc.data() : {};
+      const userPayments = userData.payments || [];
+      
+      // Check if this payment already exists in user's payments array
+      const existingPaymentIndex = userPayments.findIndex(
+        payment => payment.txRef === tx_ref
+      );
+      
+      const paymentRefObj = {
+        id: paymentId,
+        txRef: tx_ref,
+        amount: flwData.data.amount,
+        type: paymentType,
+        status: 'success',
+        paymentDate: new Date().toISOString()
+      };
+      
+      if (existingPaymentIndex >= 0) {
+        userPayments[existingPaymentIndex] = paymentRefObj;
+      } else {
+        userPayments.push(paymentRefObj);
+      }
+      
+      // Combine all user updates into one object
       const userUpdateData = {
         paymentStatus: 'success',
         lastPaymentDate: new Date().toISOString(),
         lastPaymentAmount: flwData.data.amount,
         lastPaymentType: paymentType,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        payments: userPayments // Include updated payments array
       };
       
-      // Update or create user doc
+      // Update or create user doc atomically
       try {
         if (userDoc.exists) {
           await userRef.update(userUpdateData);
@@ -350,7 +399,8 @@ async function POST(req) {
           });
         }
       } catch (userDocError) {
-        // Log user doc update failure (non-blocking - payment was successful)
+        // This is now CRITICAL. If this fails, the user is not updated.
+        // We log it and THROW it so the client knows something went wrong.
         logPaymentAudit({
           action: PAYMENT_AUDIT_ACTIONS.USER_DOC_UPDATE_FAILED,
           paymentId,
@@ -363,35 +413,15 @@ async function POST(req) {
           metadata: { operation: userDoc.exists ? 'update_user_doc' : 'create_user_doc' },
           ...auditContext,
         });
-        // Don't throw - payment was successful, this is secondary
-        console.error(`[PAYMENT] Failed to update user doc but payment was successful: ${userDocError.message}`);
+        
+        console.error(`[PAYMENT] Critical Error: Failed to update user doc after payment success: ${userDocError.message}`);
+        // We must re-throw or return error so the client knows the state is inconsistent
+        // However, the PAYMENT was verified. So we probably still want to return 200 but maybe with a warning?
+        // Actually, if we fail here, the user remains 'pending'. Return 500 to force attention?
+        // Better: throw to be caught by outer catch block, which returns 500.
+        throw new Error(`Failed to update user profile: ${userDocError.message}`);
       }
       
-      // Add payment reference to user's payments array
-      const userData = userDoc.exists ? userDoc.data() : {};
-      const userPayments = userData.payments || [];
-      
-      // Check if this payment already exists in user's payments array
-      const existingPaymentIndex = userPayments.findIndex(
-        payment => payment.txRef === tx_ref
-      );
-      
-      const paymentRefObj = {
-        id: paymentId,
-        txRef: tx_ref,
-        amount: flwData.data.amount,
-        type: paymentType,
-        status: 'success',
-        paymentDate: new Date().toISOString()
-      };
-      
-      if (existingPaymentIndex >= 0) {
-        userPayments[existingPaymentIndex] = paymentRefObj;
-      } else {
-        userPayments.push(paymentRefObj);
-      }
-      
-      await userRef.update({ payments: userPayments });
       console.log(`[PAYMENT] Payment successfully recorded and linked to user`);
       
       // Log overall verification success

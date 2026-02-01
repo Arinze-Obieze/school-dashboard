@@ -53,6 +53,15 @@ export default function SignupPage() {
     }
   }, []);
 
+  // Restore session on mount
+  useEffect(() => {
+    const savedUserId = localStorage.getItem('signup_userId');
+    if (savedUserId && !userId) {
+      setUserId(savedUserId);
+      // Optional: restore step if needed, but the useSignupSteps hook handles step restoration based on userId
+    }
+  }, []); // Empty dependency array to run only on mount
+
   // Step 1: Register user and send verification email
   const handleInfoSubmit = async (e) => {
     e.preventDefault();
@@ -87,6 +96,7 @@ export default function SignupPage() {
       const userCred = await createUserWithEmailAndPassword(auth, formWithPhone.email, formWithPhone.password);
       const user = userCred.user;
       setUserId(user.uid);
+      localStorage.setItem('signup_userId', user.uid); // Save to local storage
 
       await sendVerification(user);
 
@@ -188,10 +198,38 @@ export default function SignupPage() {
     setLoading(false);
   };
 
+  // Step 3: Skip photo upload
+  const handleSkipPhoto = async () => {
+    setLoading(true);
+    try {
+      await setDoc(doc(db, 'users', userId), {
+        photoURL: null, // No photo
+        emailVerified: true,
+        profileCompleted: true,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      nextStep();
+    } catch (err) {
+      console.error('Skip photo error:', err);
+      setError('Failed to skip. Please try again.');
+    }
+    setLoading(false);
+  };
+
   // Step 4: Handle payment with improved error handling
   const handleFlutterwavePayment = () => {
     if (!userId) {
-      setError('User not found. Please complete previous steps.');
+      // Try to recover from local storage
+      const savedUserId = localStorage.getItem('signup_userId');
+      if (savedUserId) {
+        setUserId(savedUserId);
+        // We can't immediately proceed with the original call because state update is async.
+        // But the next click should work.
+        setError('Session restored. Please click "Pay" again.');
+        return;
+      }
+      setError('User session not found. Please refresh or sign in again.');
       return;
     }
     
@@ -245,6 +283,7 @@ export default function SignupPage() {
             
             if (data.status === "success") {
               setPaymentStatus("success");
+              localStorage.removeItem('signup_userId'); // Clear session on success
               nextStep();
               setTimeout(() => router.push("/dashboard"), 3000);
             } else {
@@ -379,19 +418,33 @@ export default function SignupPage() {
         >
           <h2 className="text-2xl mb-4 text-white text-center">Application Form</h2>
           <StepProgress currentStep={step} />
-          {error && <div className="mb-4 text-red-500 text-sm">{error}</div>}
+          {error && <div className="mb-4 text-red-500 text-sm py-2 px-3 bg-red-100/10 rounded border border-red-500/50">{error}</div>}
           
           {getStepComponent()}
 
           {showSubmitButton && (
-            <button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-4 flex items-center justify-center text-sm" 
-              disabled={loading}
-            >
-              {loading && <FaSpinner className="animate-spin mr-2" />}
-              {getButtonText()}
-            </button>
+            <div className="space-y-3 mt-4">
+              <button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded flex items-center justify-center text-sm disabled:opacity-50 disabled:cursor-not-allowed" 
+                disabled={loading}
+              >
+                {loading && <FaSpinner className="animate-spin mr-2" />}
+                {getButtonText()}
+              </button>
+              
+              {/* Skip button for Photo Upload step */}
+              {step === STEPS.PHOTO_UPLOAD && (
+                <button
+                  type="button"
+                  onClick={handleSkipPhoto}
+                  className="w-full bg-transparent border border-gray-500 text-gray-300 hover:bg-gray-700 py-2 rounded flex items-center justify-center text-sm disabled:opacity-50"
+                  disabled={loading}
+                >
+                  Skip for now
+                </button>
+              )}
+            </div>
           )}
 
           <p className="mt-4 text-gray-400 text-xs text-center">
